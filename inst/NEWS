@@ -1,0 +1,4 @@
+0.99.0: This is the submitted version of the package.
+0.99.1: Changes done based on suggestions from the reviewer.
+0.99.2: Added Parents_query_archive.rda and Parents_Names.rda to save time querying by already having a pre-loaded archive.
+0.99.3: Minor changes with the unit test and RECOMMENDED comments from BiocCheck.
