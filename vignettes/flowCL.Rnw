@@ -45,7 +45,7 @@ library("flowCL")
 
 \section{Running {\it \textbf{flowCL}}}
 \subsection{Introduction}
-Given a cell type, one can use a cell ontology to discover which markers are used to uniquely identify that particular cell type. In the reverse situation, how can one find an appropriate cell type with a given phenotype (or list of markers)? {\it \textbf{flowCL}} matches a phenotype to a cell type from the cell ontology. If the match is not unique, then the best alternative is returned. Markers are input followed with a ``+'' or a ``-''. The ``+'' stands for ``has plasma membrane part'', while the ``-'' stands for ``lacks plasma membrane part''. For example, ``CD8+'' will search for cell types that have a plasma membrane part of CD8. 
+Given a cell type, one can use a cell ontology to discover which markers are used to uniquely identify that particular cell type. In the reverse situation, how can one find an appropriate cell type with a given phenotype (or list of markers)? {\it \textbf{flowCL}} matches a phenotype to a cell type from the cell ontology. If the match is not unique, then the best alternative is returned. Markers are input followed with a ``+'', ``-'', ``hi'' or ``lo''. The ``+'' stands for ``has plasma membrane part'', the ``-'' stands for ``lacks plasma membrane part'', the ``hi'' stands for ``has high plasma membrane amount'', and the ``lo'' stands for ``has low plasma membrane amount''. For example, ``CD8+'' will search for cell types that have a plasma membrane part of CD8. 
 
 {\it \textbf{flowCL}} executes queries against the Cell Ontology (CL), available at http://cellontology.org. The CL file is hosted on a triplestore, i.e., a database for storage and retrieval of Resource Description Framework (RDF) triples. The SPARQL endpoint at http://cell.ctde.net:8080/openrdf-sesame/repositories/CL is used to execute the SPARQL queries retrieving the correct matches from the CL. While other SPARQL endpoints can be used, users should be aware that in our case the CL file has been reasoned upon, and resulting extra inferred axioms have been added to the triplestore, providing a more complete result set.
 
@@ -96,11 +96,11 @@ plot(tmp[[1]], nodeAttrs=tmp[[2]], edgeAttrs=tmp[[3]], attrs=tmp[[4]])
 
 The output from $Res\$Table$ shows many properties of the phenotype queried. The name of the markers in the ontology are shown, in this case ``C-C chemokine receptor type 7'' and ``receptor-type tyrosine-protein phosphatase C isoform CD45RA'' for CCR7 and CD45RA, respectively. A successful match is also specified given that there are cell types that contain all the markers queried. The 1) - 5) represent the five cell types that are considered exact matches. In Figure \ref{fig:one}, a tree diagram shows the cell hierarchy that is dependent on both CCR7+ and CD45RA+. There are five cell types that contain both markers. 
 
-The black arrows are defined as ``is a'' (ex. native cell ``is a'' cell). The coloured arrows are the inverse of ``has/lacks plasma membrane part'' (ex. native regulatory T cell ``has plasma membrane part'' CD45RA). Each marker is associated with its own colour, which makes it easier for the user to tell which cell type contains which markers. The blue nodes are the ``has'' markers, while the red nodes are the ``lacks'' markers. The green nodes are the exact matches, while the beige nodes are the partial matches.
+The black arrows are defined as ``is a'' (ex. native cell ``is a'' cell). The coloured arrows are the inverse of ``has/lacks plasma membrane part'' or ``has high/low plasma membrane amount'' (ex. native regulatory T cell ``has plasma membrane part'' CD45RA). Each marker is associated with its own colour, which makes it easier for the user to tell which cell type contains which markers. The blue nodes are the ``has plasma membrane part'' markers, while the red nodes are the ``lacks plasma membrane part'' markers. The navy blue nodes are the ``has high plasma membrane amount'' markers and the grey blue nodes are the ``has low plasma membrane amount'' markers. The green nodes are the exact matches, while the beige nodes are the partial matches. 
 
 
 \subsection{Visual-Skip, Reset-Archive and Keep-Archive Example}
-The ``VisualSkip'' argument in {\it \textbf{flowCL}} can be used to if the user does not want the visual results.
+The ``VisualSkip'' argument in {\it \textbf{flowCL}} can be used if the user does not want the visual results.
 \begin{small}
 <<label=CCR7+CD45RA+_without_visual, fig=FALSE>>=
 Res <- flowCL("CCR7+CD45RA+", VisualSkip = TRUE)
@@ -132,16 +132,19 @@ The tree diagram in Figure \ref{fig:two} only has one perfect match. The ``Ontol
 \subsection{HIPC Example}
 There is one pre-set input for a list of phenotypes. If the user types ``HIPC'' as an argument, then this pre-set list is used. ``HIPC'' first lists all the markers that make up the HIPC phenotypes and then lists all the common HIPC phenotypes. 
 
+The ``Indices'' option allows the user to choose which one(s) to query from the list of phenotypes. The order that the values are input into ``Indices'' will be the order of the results. The $66^{th}$, $56^{th}$ and $77^{th}$ elements of the ``HIPC'' phenotype list are queried. These three were chosen to showcase some of the differences in results the user can receive. 
+
+
 \begin{small}
 <<label=HIPC1, fig=TRUE, include=FALSE>>=
-Res <- flowCL("HIPC", Indices=c(73,54,50), MaxHitsPht=7)
-tmp <- Res$'CD3+CD4+CD127-CD25+'
+Res <- flowCL("HIPC", Indices=c(66,56,77))
+tmp <- Res$'CD3+CD4+CD127loCD25+CCR4+'
 plot(tmp[[1]], nodeAttrs=tmp[[2]], edgeAttrs=tmp[[3]], attrs=tmp[[4]])
 @
 \end{small}
 \begin{figure}[htbp] \begin{center}
     \includegraphics{flowCL-HIPC1}
-    \caption{Tree diagram of the cell hierarchy when querying with phenotype: ``CD3+CD4+CD127-CD25+''}
+    \caption{Tree diagram of the cell hierarchy when querying with phenotype: ``CD3+CD4+CD127loCD25+CCR4+''}
     \label{fig:three}
 \end{center} \end{figure}
 
@@ -159,27 +162,24 @@ plot(tmp[[1]], nodeAttrs=tmp[[2]], edgeAttrs=tmp[[3]], attrs=tmp[[4]])
 
 \begin{small}
 <<label=HIPC3, fig=TRUE, include=FALSE>>=
-tmp <- Res$'CD3-CD19+CD20+CD38+CD24+'
+tmp <- Res$'CD3-CD19-CD20-CD14-HLA.DR-CD16-CD56hi'
 plot(tmp[[1]], nodeAttrs=tmp[[2]], edgeAttrs=tmp[[3]], attrs=tmp[[4]])
-Res$Table
 @
 \end{small}
 \begin{figure}[htbp] \begin{center}
     \includegraphics{flowCL-HIPC3}
-    \caption{Tree diagram of the cell hierarchy when querying with phenotype: ``CD3-CD19+CD20+CD38+CD24+''}
+    \caption{Tree diagram of the cell hierarchy when querying with phenotype: ``CD3-CD19-CD20-CD14-HLA-DR-CD16-CD56hi''}
     \label{fig:five}
 \end{center} \end{figure}
 
 
-The ``Indices'' option allows the user to choose which one(s) to query from the list of phenotypes. The order that the values are input into ``Indices'' will be the order of the results. The $73^{th}$, $54^{nd}$ and $50^{th}$ elements of the ``HIPC'' phenotype list are queried. These three were chosen to showcase some of the differences in results the user can receive. 
+The first case, $66^{th}$ element with phenotype ``CD3+CD4+CD127loCD25+CCR4+'', is a quadruple perfect match, as seen in Figure \ref{fig:three}. However, this phenotype is defined by HIPC as a ``CD4-positive, CD25-positive, CCR4-positive, alpha-beta regulatory T cell''. Therefore, there are three extra exact matches. Sometimes a phenotype does not uniquely identify a cell type, as in this example. This example has a ``lo'' marker and can be seen as a grey blue node in Figure \ref{fig:three}.
 
-The first case, $73^{rd}$ element with phenotype ``CD3+CD4+CD127-CD25+'', is a double perfect match, as seen in Figure \ref{fig:three}. However, this phenotype is defined by HIPC as a ``CD4-positive, CD25-positive, alpha-beta regulatory T cell''. Therefore, these are incorrect matches. This occurred because the correct marker to be searched would have been ``CD127lo'' instead of ``CD127-''. The current version of {\it \textbf{flowCL}} does not handle this type of input. A future version of {\it \textbf{flowCL}} will hopefully address this. Therefore, the user must be careful relying on the results of {\it \textbf{flowCL}}, especially when the desired cell populations are dim, lo, bright or hi instead of the more common ``+'' or ``-''.
+The second case, $56^{th}$ element with phenotype ``CD3+CD4+CD8-CCR7-CD45RA-'', has one perfect match. The tree diagram in Figure \ref{fig:four} also shows three more possible cell types that match 4 out of 5. This was done to give the user more information on possible alternative matches. If there were more than a total of four that were 4 or 5 out of 5, then the 4 out of 5 cases would not be shown on the tree diagram. This value of four is arbitrary. It was chosen to make sure the tree diagrams did not get cluttered. This will be explained more with the ``cut-off score'', introduced shortly. 
 
-The second case, $54^{th}$ element with phenotype ``CD3+CD4+CD8-CCR7-CD45RA-'', has one perfect match. The tree diagram in Figure \ref{fig:four} also shows two more possible cell types that match 4 out of 5. This was done to give the user more information on possible alternative matches. If there were more than a total of four that were 4 or 5 out of 5, then the 4 out of 5 cases would not be shown on the tree diagram. This value of four is arbitrary. It was chosen to make sure the tree diagrams did not get cluttered. This will be explained more with the ``cut-off score'', introduced shortly. 
+The third case, $77^{th}$ element with phenotype ``CD3-CD19-CD20-CD14-HLA-DR-CD16-CD56hi'', shows a perfect match with one non-perfect match. This example has a ``hi'' marker and can be seen as a navy blue node in Figure \ref{fig:five}. 
 
-The third case, $50^{th}$ element with phenotype ``CD3-CD19+CD20+CD38+CD24+'', there were no perfect matches. There are many 4 out of 5 matches and ``MaxHitsPht'' dictates how many of these are shown in $\$Table$; the default is 5 and in this example it is set to 7. The tree diagram, however, shows all of the 4 out of 5 cases as seen in Figure \ref{fig:five}. This tree diagram is influenced by a ``cut-off score'' and not by ``MaxHitsPht''. 
-
-The ``cut-off score'' is either equal to the number of matched markers on the highest matched cell type or one less than that. The latter case only occurs provided there are at most four cell types selected. For example, Figure \ref{fig:four} shows where the ``cut-off score'' was lowered from 5 to 4, while Figure \ref{fig:five} shows where the ``cut-off score'' was set at 4 and not lowered. This current way of calculating the cut-off has its complications. First, if there are too many non perfect cell type matches, then the tree diagram will become cluttered, as seen in Figure \ref{fig:five}. And second, if only one marker is queried, then the tree diagram that is created is usually completely unclear. Since there is more interest in phenotypes being queried than individual markers, this second complication is acceptable. The first, however, is unavoidable. 
+This tree diagram is influenced by a ``cut-off score'' and it is either equal to the number of matched markers on the highest matched cell type or one less than that. The latter case only occurs provided there are at most four cell types selected. For example, Figure \ref{fig:four} shows where the ``cut-off score'' was lowered from 5 to 4, while Figure \ref{fig:three} shows where the ``cut-off score'' was set at 5 and not lowered. This current way of calculating the cut-off has its complications. First, if there are too many non perfect cell type matches, then the tree diagram will become cluttered. And second, if only one marker is queried, then the tree diagram that is created is usually completely unclear. Since there is more interest in phenotypes being queried than individual markers, this second complication is acceptable. The first, however, is unavoidable. 
 
 \subsection{Cell Label Example}
 In many cases {\it \textbf{flowCL}} will only be used to extract the best possible cell label given a set of markers. The following code shows an example of this:
@@ -201,7 +201,7 @@ If the user wants all possible results and all tree diagrams, then the command o
 \item
 There are two packages that {\it \textbf{flowCL}} depends upon. The first is {\it \textbf{SPARQL}}, which is used when retrieving cell ontology data. The other is {\it \textbf{Rgraphviz}}, which is used when creating the tree diagrams.
 \item
-The user should note that since the ontology can be and will be updated, the R results shown in this vignette, both the figures and the static text, may not match a live run of flowCL. Also the data files containing a pre-loaded archive can be outdated. The maintainer will try to keep the vignette and data file as up to date as possible. The data file as well as text and the figures in the examples from this vignette describe results from the cell ontology that was last updated on March $18^{th}$ 2014.
+The user should note that since the ontology can be and will be updated, the R results shown in this vignette, both the figures and the static text, may not match a live run of flowCL. Also the data files containing a pre-loaded archive can be outdated. The maintainer will try to keep the vignette and data files as up to date as possible. The data files as well as text and the figures in the examples from this vignette describe results from the cell ontology that was last updated on March $18^{th}$ 2014.
 \end{itemize}
 %\bibliographystyle{plain}
 %\bibliography{flowCL}

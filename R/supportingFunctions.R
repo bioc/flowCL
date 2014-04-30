@@ -1,30 +1,39 @@
 #################################################################################
 # supporting functions (flowCL: Semantic labelling of flow cytometric cell populations)
 # Author: Justin Meskas (jmeskas@bccrc.ca)
-# Date last modified: March 14, 2014
+# Date last modified: April 30, 2014
 # Author: Radina Droumeva (radina.droumeva@gmail.com )
 # Date last modified: July 19, 2013
 #################################################################################
 
+
+#################################################################################
+# A test to see if the user has input "cd" instead of "CD"
+cdTest <- function ( MarkerList ) {
+    ShouldBreak <- FALSE
+    for ( p1 in 1:length(MarkerList)){
+        if ( regexpr ( pattern="cd", MarkerList[p1] )[[1]] >= 1) { 
+            warning ( paste("You have input \"cd\" in ", MarkerList[p1], ". flowCL is case sensitive. CD should be capitalized.", sep="") )
+            ShouldBreak <- TRUE
+        }
+    }
+    return (ShouldBreak)
+}
 #################################################################################
 # Change the "." in HLA.DR to a - since the + and - signs are reserved for splitting the string
-# Should change this to allow for any marker with a period to change to a dash
+# Consider to change this to allow for any marker with a period to change to a dash
 changeHLADR <- function ( marker.list ) {
-if ( length ( marker.list[["Positive"]] ) >= 1 ) {
-    for ( q1 in 1:length ( marker.list[["Positive"]] ) ) {
-        if ( marker.list[["Positive"]][q1] == "HLA.DR" ) {
-            marker.list[["Positive"]][q1] <- "HLA-DR"
+    
+    for ( q2 in 1:length(marker.list)){    
+        if ( length ( marker.list[[q2]] ) >= 1 ) {
+            for ( q1 in 1:length ( marker.list[[q2]] ) ) {
+                if ( marker.list[[q2]][q1] == "HLA.DR" ) {
+                    marker.list[[q2]][q1] <- "HLA-DR"
+                }
+            }
         }
     }
-}
-if ( length ( marker.list[["Negative"]] ) >= 1 ) {
-    for ( q1 in 1:length ( marker.list[["Negative"]] ) ) {
-        if ( marker.list[["Negative"]][q1] == "HLA.DR" ) {
-            marker.list[["Negative"]][q1] <- "HLA-DR"
-        }
-    }
-}
-return ( marker.list )
+    return ( marker.list )
 }
 
 #################################################################################
@@ -73,9 +82,9 @@ treeDiagram <- function ( child.analysis, clean.res, phenotype, OntolNamesTD, ma
             # removes all non first generation children
             child.analysis[labels[q8]][[1]] <- child.analysis[labels[q8]][[1]][-deletePoints] 
         }
-    }  
+    }
     # Sets up Rgraphviz with all the node titles in "labels"
-    rEG <- new ( "graphNEL", nodes = c ( labels, marker.list.short[["Positive"]], marker.list.short[["Negative"]] ), edgemode="directed" )
+    rEG <- new ( "graphNEL", nodes = c ( labels, marker.list.short[[1]], marker.list.short[[2]], marker.list.short[[3]], marker.list.short[[4]]), edgemode="directed" )
       
     for ( q13 in 1:length ( labels ) ) {
         for ( q14 in 1:length ( child.analysis[labels[q13]][[1]] ) ) {
@@ -94,36 +103,34 @@ treeDiagram <- function ( child.analysis, clean.res, phenotype, OntolNamesTD, ma
   
     # Load all predetermined colours
     listColours_flowCL <- as.matrix ( listColours_flowCL )
-  
+    
+    # Calculate the number of markers in each subsection of marker.list.short and calculate the indices 
+    NumMarkers <- c( length(marker.list.short[[1]]), length(marker.list.short[[2]]), length(marker.list.short[[3]]), length(marker.list.short[[4]]) )
+    NumMarkersOrg <- NumMarkers
+    NumMarkers[2] <- NumMarkers[1] + NumMarkers[2]
+    NumMarkers[3] <- NumMarkers[2] + NumMarkers[3]
+    NumMarkers[4] <- NumMarkers[3] + NumMarkers[4]
+    NumMarkers    <- NumMarkers - NumMarkersOrg
     # Make lists of arrows start and end locations, colour and label
     count.markers <- 0
     for ( q15 in 1:length ( labels ) ) {
         for ( q16 in 1:length ( clean.res[,'celllabel'] ) ) {
             if ( clean.res[q16,'celllabel'] == ( labels[q15] ) ) {
-                if ( length ( marker.list[["Positive"]] ) != 0 ) {
-                    for ( q17 in 1:length ( marker.list[["Positive"]] ) ) {
-                        if ( grepl ( marker.list[["Positive"]][q17],clean.res[q16,'markerlabel'] ) == TRUE ) {
-                            count.markers <- count.markers + 1
-                            rEG <- addEdge ( marker.list.short[["Positive"]][q17], labels[q15], rEG, 1 )
-                            arrows.colour <- c ( arrows.colour, listColours_flowCL[q17] )
-                            arrows.label  <- c ( arrows.label, paste ( marker.list.short[["Positive"]][q17],"~",labels[q15], sep = "" ) )
-                            arrows.dashed.solid <- c ( arrows.dashed.solid, "dashed" )       
-                            arrows.head <- c ( arrows.head, "none" )                
+                for ( q3 in 1:length(marker.list)){
+                    if ( length ( marker.list[[q3]] ) != 0 ) {
+                        for ( q17 in 1:length ( marker.list[[q3]] ) ) {
+                            if ( grepl ( marker.list[[q3]][q17], clean.res[q16,'markerlabel'] ) == TRUE ) {
+                                count.markers <- count.markers + 1
+                                rEG <- addEdge ( marker.list.short[[q3]][q17], labels[q15], rEG, 1 )
+                                arrows.colour <- c ( arrows.colour, listColours_flowCL[NumMarkers[q3]+q17] )
+                                arrows.label  <- c ( arrows.label, paste ( marker.list.short[[q3]][q17],"~",labels[q15], sep = "" ) )
+                                arrows.dashed.solid <- c ( arrows.dashed.solid, "dashed" )       
+                                arrows.head <- c ( arrows.head, "none" )                
+                            }
                         }
                     }
                 }
-                if ( length ( marker.list[["Negative"]] ) != 0 ) {
-                    for ( q18 in 1:length ( marker.list[["Negative"]] ) ) {
-                        if ( grepl ( marker.list[["Negative"]][q18],clean.res[q16,'markerlabel'] ) == TRUE ) {
-                            count.markers <- count.markers + 1
-                            rEG <- addEdge(marker.list.short[["Negative"]][q18],labels[q15], rEG, 1 )
-                            arrows.colour <- c ( arrows.colour, listColours_flowCL[length ( marker.list.short[["Positive"]] )+q18] )
-                            arrows.label  <- c ( arrows.label , paste ( marker.list.short[["Negative"]][q18],"~",labels[q15], sep = "" ) )
-                            arrows.dashed.solid <- c ( arrows.dashed.solid, "dashed" )
-                            arrows.head <- c ( arrows.head, "none" )         
-                        }
-                    }
-                }
+
                 # make perfect matches green  
                 if ( count.markers == length ( unlist ( marker.list ) ) ) {        
                     labels.colour[q15] <- "lightgreen"
@@ -138,20 +145,31 @@ treeDiagram <- function ( child.analysis, clean.res, phenotype, OntolNamesTD, ma
             }
         }
     }
-    if ( length ( marker.list[["Positive"]] ) != 0 ) { # colour positive markers sky blue
-        for ( q19 in 1:( length ( marker.list[["Positive"]] ) ) ) {
-            labels.colour[length ( labels ) + q19] <- "skyblue"
+
+    if ( length ( marker.list[[1]] ) != 0 ) { # colour positive markers sky blue
+        for ( q19 in 1:( length ( marker.list[[1]] ) ) ) {
+            labels.colour[length ( labels.colour ) + 1] <- "skyblue"
         }
     }
-    if ( length ( marker.list[["Negative"]] ) != 0 ) {
-        for (q19 in 1:(length ( marker.list[["Negative"]] ) ) ) { # colour negative markers a light red colour
-            labels.colour[length ( labels ) + length ( marker.list[["Positive"]] ) + q19] <- "lightcoral"
+    if ( length ( marker.list[[2]] ) != 0 ) {
+        for (q19 in 1:(length ( marker.list[[2]] ) ) ) { # colour negative markers a light red colour
+            labels.colour[length ( labels.colour ) + 1] <- "lightcoral"
+        }
+    }
+    if ( length ( marker.list[[3]] ) != 0 ) {
+        for (q19 in 1:(length ( marker.list[[3]] ) ) ) { # colour negative markers a lighter blue colour
+            labels.colour[length ( labels.colour ) + 1] <- "royalblue1"
+        }
+    }
+    if ( length ( marker.list[[4]] ) != 0 ) {
+        for (q19 in 1:(length ( marker.list[[4]] ) ) ) { # colour negative markers a darker blue colour
+            labels.colour[length ( labels.colour ) + 1] <- "lightcyan3"
         }
     }
     nAttrs <- list ( )
     eAttrs <- list ( )
 
-    nAttrs$fillcolor <- structure(c (labels.colour ), .Names = c (labels, marker.list.short[["Positive"]], marker.list.short[["Negative"]] ) )
+    nAttrs$fillcolor <- structure(c (labels.colour ), .Names = c (labels, marker.list.short[[1]], marker.list.short[[2]], marker.list.short[[3]], marker.list.short[[4]] ) )
     eAttrs$color <- structure(c (arrows.colour ), .Names = c (arrows.label ) )
   
 #   # Even though it looks like arrows.dashed.solid and arrows.head are being used, they are not. 
@@ -172,8 +190,6 @@ treeDiagram <- function ( child.analysis, clean.res, phenotype, OntolNamesTD, ma
 
 #################################################################################
 ### Break up a phenotype into individual markers and 'signs'
-#   TO DO: After discussion this should be changed to also support expression
-#   levels other than 'positive' and 'negative' -- such as 'dim', 'low', 'lo', 'high' and ??
 
 phenoParse <- function ( phenotype )  {
     
@@ -182,61 +198,69 @@ phenoParse <- function ( phenotype )  {
         try ( phenotype <- as.character ( phenotype ) )
     }
   
-    # First split up the string based on + or - to get the markers
-    markers <- unlist ( strsplit ( x = phenotype, split = "\\+|\\-" ) )
+    # First split up the string based on +, -, hi or lo to get the markers
+    markers <- unlist ( strsplit ( x = phenotype, split = "\\+|\\-|hi|lo" ) )
     # Next, split the original string based on the markers found above, leaving
     # only the signs (remove first result as there is no leading sign )
-  
+    
+    for ( k in 1:length(markers)){
+        if ( nchar(markers[k]) <= 2 ) {
+            warning ( "Your input markers are most likely ill defined. Most markers have labels and synonyms that are at least 3 characters long." )
+        }
+    }
+   
     signs <- unlist ( strsplit ( x = phenotype, split = paste ( markers, sep = "", collapse="|" ) ) )[-1]
-  
-    # Return a list of positive and negative markers
-    res <- list ( `Positive` = markers[signs == "+"], `Negative` = markers[signs == "-"] )
-  
+    
+    # Return a list of positive, negative, low and high markers
+    res <- list ( `Positive` = markers[signs == "+"], `Negative` = markers[signs == "-"] , 
+                  `High\\Bright` = markers[signs == "hi"], `Low\\Dim` = markers[signs == "lo"])
+    
     return ( res )
 }
 
 #################################################################################
 # Creates a string with the updated phenotypes to have better formatting for listPhenotypes.csv
 phenoUnparse <- function ( phenotype, marker.list ) {
-
-posit.pos <- gregexpr ( pattern="[+]", phenotype )
-posit.neg <- gregexpr ( pattern="[-]", phenotype )
-posit.pos <- posit.pos[[1]]
-posit.neg <- posit.neg[[1]]
-temp <- c ( )
-q1 <- 1; q2 <- 1
-# create the vector temp containing 1's and 0's to record the order of negatives and positives.
-for ( k in 1:( length ( posit.pos ) + length ( posit.neg ) - as.numeric ( posit.pos[q1] == - 1 ) - as.numeric ( posit.neg[q2] == - 1 ) ) ) {
-    if ( posit.pos[q1] != - 1 && posit.neg[q2] != - 1 && !is.na ( posit.pos[q1] ) && !is.na ( posit.neg[q2] ) ) {
-        if ( posit.pos[q1] < posit.neg[q2] ) {
-            temp[k] <- 1; q1 <- q1 + 1 # pos occurred earlier therefore pos
-        } else {
-            temp[k] <- 0; q2 <- q2 + 1 # neg occurred earlier therefore neg 
+    
+    # Find indices of where a certain pattern is found in the variable called phenotype
+    posit.pos <- gregexpr ( pattern="[+]", phenotype )[[1]]
+    posit.neg <- gregexpr ( pattern="[-]", phenotype )[[1]]
+    posit.hi  <- gregexpr ( pattern="hi",  phenotype )[[1]]
+    posit.lo  <- gregexpr ( pattern="lo",  phenotype )[[1]]
+    
+    if ( sum ( posit.pos, posit.neg, posit.hi, posit.lo ) == -4){
+        warning ( "Phenotype does not contain a valid tag! (e.g. +, -, lo or hi)" )
+        return ( phenotype )
+    }
+    
+    # Combine all indices into one list
+    allPosit <- sort(c(posit.pos, posit.neg, posit.hi ,posit.lo), decreasing=FALSE)
+    # Remove all -1's caused by there being no markers in one or more of the sub-groups.
+    if ( length ( which (allPosit == -1 ) ) >= 1 ){
+        allPosit <- allPosit[-which(allPosit == -1)]
+    }
+    
+    temp.string <- c ( )
+    # Compile a string that maintains the same order from the inputted phenotype but makes it friendly for .csv files
+    for ( k in 1:length(allPosit)){
+        if ( length ( intersect ( allPosit[k], posit.pos ) ) >= 1 ) {
+            temp.string <-  paste ( temp.string, marker.list[[1]][ which ( posit.pos == intersect ( allPosit[k], posit.pos))], "\n", sep = "" )
         }
-    } else { # this else statement only comes into effect if there is no more +'s or no -'s left in the lists.
-        if ( posit.pos[q1] == - 1 || is.na ( posit.pos[q1] ) ) {
-            temp[k] <- 0 # no more pos therefore neg
-        }  
-        if ( posit.neg[q2] == - 1 || is.na ( posit.neg[q2] ) ) {
-            temp[k] <- 1 # no more neg therefore pos
-        }  
+        if ( length ( intersect ( allPosit[k], posit.neg ) ) >= 1 ) {
+            temp.string <-  paste ( temp.string, marker.list[[2]][ which ( posit.neg == intersect ( allPosit[k], posit.neg))], "\n", sep = "" )
+        }
+        if ( length ( intersect ( allPosit[k], posit.hi  ) ) >= 1 ) {
+            temp.string <-  paste ( temp.string, marker.list[[3]][ which ( posit.hi  == intersect ( allPosit[k], posit.hi ))], "\n", sep = "" )
+        }
+        if ( length ( intersect ( allPosit[k], posit.lo  ) ) >= 1 ) {
+            temp.string <-  paste ( temp.string, marker.list[[4]][ which ( posit.lo  == intersect ( allPosit[k], posit.lo ))], "\n", sep = "" )
+        }
     }
-}
+    
+    # removes the \n from the last line for formatting reasons in the .csv file
+    temp.string <- substr ( temp.string, 1, nchar ( temp.string ) - 1 ) 
 
-# add +'s and -'s onto marker.list according to the order of the 1's and 0's from temp
-temp.string <- c ( )
-q1 <- 1; q2 <- 1
-for ( k in 1:length ( temp ) ) {
-    if ( temp[k] == 1  )  {
-        temp.string <-  paste ( temp.string, marker.list[["Positive"]][q1], "\n", sep = "" ) ; q1 <- q1 +1
-    }
-    if ( temp[k] == 0  )  {
-        temp.string <-  paste ( temp.string, marker.list[["Negative"]][q2], "\n", sep = "" ) ; q2 <- q2 +1
-    }
-}
-# removes the \n from the last line for formatting reasons in the .csv file
-temp.string <- substr ( temp.string, 1, nchar ( temp.string ) - 1 ) 
-return ( temp.string )
+    return ( temp.string )
 }
 
 #################################################################################
@@ -244,6 +268,7 @@ return ( temp.string )
 #   TO DO: For now, this relies on the first column having the unique IDs of
 #   the owl objects returned.
 tabulateResults <- function ( res ) {
+
     number.of.hits <- table ( res[ , 1] )
     res <- cbind ( res, number.of.hits[res[, 1]] )
     colnames ( res )[ncol ( res )] <- "Number Of Hits"
@@ -260,7 +285,7 @@ tabulateResults <- function ( res ) {
         clean.res[id, "Score"] <- as.numeric ( clean.res[id, "Number Of Hits"] ) + 
         as.numeric ( clean.res[id, "penalties"] )
     }
-    # Required because of a bug cause from only having 1 row (f[1,] notation was a problem )
+    # Required because of a bug caused from only having 1 row (f[1,] notation was a problem )
     if ( nrow ( clean.res ) >= 2 ) {
         sort.scores <- sort ( as.numeric ( clean.res[, "Score"] ), 
                                 decreasing = TRUE, index.return = TRUE )$ix
@@ -272,6 +297,7 @@ tabulateResults <- function ( res ) {
 
 #################################################################################
 # Prints out the time since start_time. Used for optimizing code and for informing the user how long certain processes take.
+# This function was copied from an online forum. Useful for keeping time.
 timeOutput <- function ( start_time )  {
     start_time <- as.POSIXct ( start_time )
     dt <- difftime ( Sys.time ( ), start_time, units = "secs" )
@@ -295,9 +321,9 @@ updateLists <- function ( clean.res, MaxHitsPht ) {
                 temp.index <- gregexpr ( "PR", ( clean.res[q2,'marker'] ) )
                 temp.string <- ""
                 if ( ( temp.index[[1]][1] != - 1 ) ) {
-                    for (q7 in 1:length ( temp.index[[1]] ) ) {
-                        temp.string <- paste ( temp.string, substr(clean.res[q2,'marker'],temp.index[[1]][q7],temp.index[[1]][q7]+11 ),"\n", sep = "" )
-                        if ( q7 == length ( temp.index[[1]] ) ) {temp.string <- substr(temp.string,1,nchar ( temp.string )-1 )} # Removes the last \n 
+                    for ( q7 in 1:length ( temp.index[[1]] ) ) {
+                        temp.string <- paste ( temp.string, substr ( clean.res[q2,'marker'], temp.index[[1]][q7], temp.index[[1]][q7] + 11 ), "\n", sep = "" )
+                        if ( q7 == length ( temp.index[[1]] ) ) { temp.string <- substr ( temp.string, 1, nchar ( temp.string ) - 1 ) } # Removes the last \n 
                     }
                 }
                 # Look in the Label of the marker ID for "GO" then pulls out the GO and the numbers that follow
@@ -396,41 +422,43 @@ return <- c(
 "CCR6+","CD19+","CD20+","CD27+","IgD+","CD24+","CD14+","CD11c+","CD123+","CD16+","CD56+",
 "CD3-","CD4-","CD8-","CCR7-","CD45RA-","CD38-","HLA.DR-","CD127-","CD25-","CCR4-","CD45RO-","CXCR3-",
 "CCR6-","CD19-","CD20-","CD27-","IgD-","CD24-","CD14-","CD11c-","CD123-","CD16-","CD56-",
-"CD3-CD19+CD20+IgD+CD27-",
-"CD3-CD19+CD20+IgD-CD27+",
-"CD3-CD19+CD20+IgD+CD27+",
-"CD3-CD19+CD20+CD38+CD24+",
-"CD3-CD19+CD20-CD38+CD27+",
+"CD127lo","CD24hi","CD38hi","CD27hi","CD56hi","CD56lo",
+"CD3+CD4+CD8-CD38+HLA.DR+",
 "CD3+CD4+CD8-CCR7+CD45RA+",
 "CD3+CD4+CD8-CCR7+CD45RA-",
 "CD3+CD4+CD8-CCR7-CD45RA-",
 "CD3+CD4+CD8-CCR7-CD45RA+",
-"CD3+CD4+CD8-CD38+HLA.DR+",
+"CD3+CD4-CD8+CD38+HLA.DR+",
 "CD3+CD4-CD8+CCR7+CD45RA+",
 "CD3+CD4-CD8+CCR7+CD45RA-",
 "CD3+CD4-CD8+CCR7-CD45RA-",
 "CD3+CD4-CD8+CCR7-CD45RA+",
-"CD3+CD4-CD8+CD38+HLA.DR+",
-"CD3+CD4+CD25+CD127-CCR4+CD45RO+",
-"CD3+CD4+CD25+CD127-CCR4+CD45RO-",
-"CD3+CD4+CD25+CD127-CCR4+HLA.DR+",
-"CD3+CD4+CD8-CXCR3-CCR6-",
-"CD3+CD4+CD8-CXCR3+CCR6-",
-"CD3+CD4+CD8-CXCR3-CCR6+",
-"CD3+CD4-CD8+CXCR3-CCR6-",
-"CD3+CD4-CD8+CXCR3+CCR6-",
-"CD3+CD4-CD8+CXCR3-CCR6+",
-"CD14-CD3-CD19-CD20-CD16-CD56-HLA.DR+CD11c-CD123+",
-"CD14-CD3-CD19-CD20-CD16-CD56-HLA.DR+CD11c+CD123-",
-"CD3+CD4+CD127-CD25+",
-"CD3+CD4+CD127-CD25+CCR4+",
+"CD3+CD4+CD127loCD25+",
+"CD3+CD4+CD127loCD25+CCR4+CD45RO-",
+"CD3+CD4+CD127loCD25+CCR4+CD45RO+",
+"CD3+CD4+CD127loCD25+CCR4+",
+"CD3+CD4+CD127loCD25+CCR4+HLA.DR+",
+"CD3-CD19+CD20+CD27-IgD+",
+"CD3-CD19+CD20+CD27+IgD+",
+"CD3-CD19+CD20+CD27+IgD-",
+"CD3-CD19+CD20+CD24hiCD38hi",
+"CD3-CD19+CD20-CD27hiCD38hi",
 "CD3-CD19-CD20-CD14+",
 "CD3-CD19-CD20-CD14+CD16+",
 "CD3-CD19-CD20-CD14+CD16-",
-"CD3-CD19-CD20-CD14-HLA.DR-",
-"CD3-CD19-CD20-CD14-HLA.DR-CD16+CD56+",
-"CD3-CD19-CD20-CD14-HLA.DR-CD16+CD56-",
-"CD3-CD19-CD20-CD14-CD16-CD56-HLA.DR+")
+"CD3-CD19-CD20-CD14-HLA.DR-CD16+CD56lo",
+"CD3-CD19-CD20-CD14-HLA.DR-CD16-CD56hi",
+"CD3-CD19-CD20-CD14-CD16-CD56-HLA.DR+",
+"CD3-CD19-CD20-CD14-CD16-CD56-HLA.DR+CD11c-CD123+",
+"CD3-CD19-CD20-CD14-CD16-CD56-HLA.DR+CD11c+CD123-",
+"CD3+CD4+CD8-CD38+HLA.DR+",
+"CD3+CD4+CD8-CXCR3+CCR6-",
+"CD3+CD4+CD8-CXCR3-CCR6-",
+"CD3+CD4+CD8-CXCR3-CCR6+",
+"CD3+CD4-CD8+CD38+HLA.DR+",
+"CD3+CD4-CD8+CXCR3+CCR6-",
+"CD3+CD4-CD8+CXCR3-CCR6-",
+"CD3+CD4-CD8+CXCR3-CCR6+")
 
 }
 ####################################################
@@ -520,6 +548,44 @@ return <- c("select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
 "  ?x rdfs:subClassOf ?sub.",                                
 "  ?sub rdf:type owl:Restriction.",                          
 "  ?sub owl:onProperty has_pmp:.",                           
+"  ?sub owl:someValuesFrom ?marker.",                        
+"  ?marker rdfs:label ?markerlabel.  ",                      
+"  has_pmp: rdfs:label ?plabel.",                            
+"  FILTER regex(?markerlabel, \"$marker\", \"i\")",          
+"}")                                                         
+}
+
+##################################
+# function for loading hasPlasmaMembranePart data
+flowCL_query_data_hasLowPlasmaMembraneAmount <- function(){
+    
+return <- c("select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
+"where",                                                     
+"{",                                                         
+"  ?x a owl:Class.",                                         
+"  ?x rdfs:label ?celllabel.",                               
+"  ?x rdfs:subClassOf ?sub.",                                
+"  ?sub rdf:type owl:Restriction.",                          
+"  ?sub owl:onProperty has_low_pma:.",                           
+"  ?sub owl:someValuesFrom ?marker.",                        
+"  ?marker rdfs:label ?markerlabel.  ",                      
+"  has_pmp: rdfs:label ?plabel.",                            
+"  FILTER regex(?markerlabel, \"$marker\", \"i\")",          
+"}")                                                         
+}
+
+##################################
+# function for loading hasPlasmaMembranePart data
+flowCL_query_data_hasHighPlasmaMembraneAmount <- function(){
+    
+return <- c("select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
+"where",                                                     
+"{",                                                         
+"  ?x a owl:Class.",                                         
+"  ?x rdfs:label ?celllabel.",                               
+"  ?x rdfs:subClassOf ?sub.",                                
+"  ?sub rdf:type owl:Restriction.",                          
+"  ?sub owl:onProperty has_high_pma:.",                           
 "  ?sub owl:someValuesFrom ?marker.",                        
 "  ?marker rdfs:label ?markerlabel.  ",                      
 "  has_pmp: rdfs:label ?plabel.",                            
@@ -647,6 +713,7 @@ return <- c("PREFIX :<http://purl.obolibrary.org/obo/cl.owl#>",
 )  
 }
 
+# unit test function to test if the server is connected and ready to be queried
 test.flowCL.connection <- function()
 {   
     require("RUnit")

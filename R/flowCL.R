@@ -3,10 +3,10 @@ flowCL <- function ( MarkerList = "HIPC", Indices = NULL, CompInfo = FALSE, Keep
 
 # flowCL (Semantic labelling of flow cytometric cell populations)
 # Author: Justin Meskas (jmeskas@bccrc.ca)
-# Date last modified: March 14, 2014
+# Date last modified: April 30, 2014
 # Author: Radina Droumeva (radina.droumeva@gmail.com)
 # Date last modified: July 19, 2013
-
+    
 initialTime <- Sys.time ( )
 
 VisualizationSkip <- VisualSkip       # Skips the making of the visualization (tree diagram)
@@ -20,14 +20,20 @@ listPhenotypes_flowCL <- listPhenotypes_flowCL()
 listColours_flowCL    <- listColours_flowCL()
 
 # Load more required data from supportingFunctions. 
-prefix.info                 <- flowCL_query_data_prefix.info()
-que.getParentClasses        <- flowCL_query_data_getParentClasses()
-que.hasPlasmaMembranePart   <- flowCL_query_data_hasPlasmaMembranePart()
-que.hasProperLabel          <- flowCL_query_data_hasProperLabel()
-que.hasPMPsingle            <- flowCL_query_data_hasPMPsingle()
-que.hasProperSynonym        <- flowCL_query_data_hasProperSynonym()
-que.lacksPMPsingle          <- flowCL_query_data_lacksPMPsingle()
-que.lacksPlasmaMembranePart <- flowCL_query_data_lacksPlasmaMembranePart()
+prefix.info                     <- flowCL_query_data_prefix.info()
+que.getParentClasses            <- flowCL_query_data_getParentClasses()
+que.hasPlasmaMembranePart       <- flowCL_query_data_hasPlasmaMembranePart()
+que.hasProperLabel              <- flowCL_query_data_hasProperLabel()
+que.hasPMPsingle                <- flowCL_query_data_hasPMPsingle()
+que.hasProperSynonym            <- flowCL_query_data_hasProperSynonym()
+que.lacksPMPsingle              <- flowCL_query_data_lacksPMPsingle()
+que.lacksPlasmaMembranePart     <- flowCL_query_data_lacksPlasmaMembranePart()
+que.hasLowPlasmaMembraneAmount  <- flowCL_query_data_hasLowPlasmaMembraneAmount()
+que.hasHighPlasmaMembraneAmount <- flowCL_query_data_hasHighPlasmaMembraneAmount()
+
+# Function to test if the user has input cd in non-capitals. If so, the code will terminate.
+if ( cdTest ( MarkerList ) == TRUE)
+    return()
 
 # Check date of Ontology update
 if ( MarkerList == "Date"||MarkerList == "date"||MarkerList == "DATE" ) {
@@ -47,15 +53,12 @@ listPhenotypes <- as.matrix ( listPhenotypes )
 
 # Start and end of the iterations from MarkerList.
 if ( is.null ( Indices ) ) {
-  IterStart = 1
-  IterEnd   = length ( listPhenotypes )
-  markersToQuery <- IterStart:IterEnd
+    IterStart = 1
+    IterEnd   = length ( listPhenotypes )
+    markersToQuery <- IterStart:IterEnd
 } else {
-#   nonIndices <- 1:length(listPhenotypes)
-#   nonIndices <- nonIndices[-Indices]
-#   listPhenotypes <- listPhenotypes[-nonIndices]
-  listPhenotypes <- listPhenotypes[Indices]
-  markersToQuery <- 1:length(Indices)
+    listPhenotypes <- listPhenotypes[Indices]
+    markersToQuery <- 1:length(Indices)
 }
 
 # Preallocate lists.
@@ -103,6 +106,12 @@ start <- Sys.time ( )
 
 # Define a phenotype to test here.
 phenotype <- listPhenotypes[[q]]
+# Change the phenotype to have only hi and lo and not other variations
+phenotype <- sub("bright", "hi", phenotype)
+phenotype <- sub("bri",    "hi", phenotype)
+phenotype <- sub("high",   "hi", phenotype)
+phenotype <- sub("dim",    "lo", phenotype)
+phenotype <- sub("low",    "lo", phenotype)
     
 # Output for the user
 if ( CompInfo == TRUE ) { cat("\nThe phenotype of interest is", phenotype, "\n" ) }
@@ -111,28 +120,26 @@ if ( CompInfo == TRUE ) { cat("\nThe phenotype of interest is", phenotype, "\n" 
 # by their expression (only positive or negative expression implemented for now)
 # see supportingFunctions.R for details on how 'phenoParse' works.
 marker.list <- phenoParse ( phenotype )
-   
+
 # Change the . in HLA.DR to a - since the + and - signs are reserved for splitting the string.
 marker.list <- changeHLADR ( marker.list )
 # Creates another copy which will have the + and - signs. Used by treeDiagram and when searching files.
 marker.list.short <- marker.list
 
-# Put the + and - signs back on marker.list.short. Used by treeDiagram and when searching files.
-if ( length ( marker.list.short[["Positive"]] ) != 0 ) {
-    for ( q2 in 1:( length ( marker.list.short[["Positive"]] ) ) ) {
-        marker.list.short[["Positive"]][q2] <- paste ( marker.list.short[["Positive"]][q2], "+", sep = "" )
-    }
-}
-if ( length( marker.list.short[["Negative"]] ) != 0 ) {
-    for ( q2 in 1:( length ( marker.list.short[["Negative"]] ) ) ) {
-        marker.list.short[["Negative"]][q2] <- paste ( marker.list.short[["Negative"]][q2], "-", sep = "" )
+# Put the +, -, hi and lo signs back on marker.list.short. Used by treeDiagram and when searching files.
+AddOn <- c("+", "-", "hi", "lo")
+for ( q3 in 1:length(marker.list)){
+    if ( length ( marker.list.short[[q3]] ) != 0 ) {
+        for ( q2 in 1:( length ( marker.list.short[[q3]] ) ) ) {
+            marker.list.short[[q3]][q2] <- paste ( marker.list.short[[q3]][q2], AddOn[q3], sep = "" )
+        }
     }
 }
 
 # Update the marker list with the full label names from the ontology.
 marker.list <- ontologyLabel ( marker.list, marker.list.short, CompInfo = CompInfo, save.dir = save.dir, 
                                 que.hasProperLabel = que.hasProperLabel, que.hasProperSynonym = que.hasProperSynonym, prefix.info = prefix.info )
-# Make a list of the ontology names for each phenotype searched for, which will be exported to a table in .csv form later
+# Make a list of the ontology names for each phenotype searched for, which will be exported to a table in .csv form
 listPhenotypeUpdate[[q]]   <- phenoUnparse ( phenotype, marker.list )
 
 # Default skip Query to TRUE. If it changes to FALSE then querying will have to be done.
@@ -146,8 +153,12 @@ for ( i in unlist ( marker.list.short ) ) {
     fname <- paste ( save.dirResults, 'results_', i, '.csv', sep = "" )
     if ( file.exists ( fname ) ) {
         tempCSV <- read.csv ( fname, as.is=TRUE )
+        if ( length ( which ( tempCSV[,"Number.Of.Hits"] > 1 )) >= 1 ) { # Number Of Hits column
+            warning ( "You are receiving more marker labels than markers that were input. Most likely the input markers are not defined correctly." )
+        }
         # delete the last two columns to combine and redue the results of the last two columns with other markers
         tempCSV <- tempCSV[ - c ( ncol ( tempCSV ) , ncol ( tempCSV ) - 1 ) ] 
+
         res <- rbind ( res, tempCSV )
     } else {
         if ( CompInfo == TRUE ) { cat ( "At least one marker was not previously queried. Querying all.\n" ) }
@@ -159,104 +170,68 @@ for ( i in unlist ( marker.list.short ) ) {
 # If all results files exist then no querying needs to be done
 if ( skipQuery == TRUE ) {
     
-  clean.res <- tabulateResults ( res )
-
+    clean.res <- tabulateResults ( res )
+  
 } else {
     # Initialize result collector.
     res <- NULL
-    for ( m in marker.list[["Positive"]] ) { # For each positive marker.
-        if ( CompInfo == TRUE ) { cat( "Locating marker", m, "\n" ) }
-        # Get relevant information about the marker - the population names which
-        # have "plasma membrane part" of this marker.
-        cur.res <- queryMarker ( marker = m, query.file = que.hasPlasmaMembranePart, prefix.info = prefix.info )
-        if ( nrow ( cur.res ) == 0 ) {
-            if ( CompInfo == TRUE ) { cat( "No cell populations found which have plasma membrane part", m, "!\n" ) }
-        }
-
-        # VERY INEFFICIENTLY, cycle through the other markers and assign a penalty 
-        # according to a contradiction count.
-        penalties <- rep ( 0, nrow ( cur.res ) )
-        # Skips the penalty calculator if TRUE (very slow part of the code).
-        if ( penalty.skip == FALSE ) {
-        for ( other.marker in marker.list[["Negative"]] ) {
-            for ( i in 1:nrow ( cur.res ) ) {
-                temp <- queryMarker ( marker = other.marker, query.file = que.hasPMPsingle,
-                                        celllabel = cur.res[i, 'celllabel'], prefix.info = prefix.info )
-                if ( nrow ( temp ) > 0 ) {
-                  # If one of the negatively expressed markers was found for the current
-                  # cell type as "has plasma membrane part", that is a contradiction which
-                  # should be penalized, proportionally to the number of markers in total.
-                  penalties[i] <- penalties[i] - 1 / length ( unlist ( marker.list ) )
-                }
+    for ( q3 in 1:length(marker.list)){
+        for ( m in marker.list[[q3]] ) {
+            if ( CompInfo == TRUE ) { cat( "Locating marker", m, "\n" ) }
+            # Get relevant information about the marker - the population names which
+            # have "plasma membrane part" of this marker.
+            if ( q3 == 1 ) { cur.res <- queryMarker ( marker = m, query.file = que.hasPlasmaMembranePart,       prefix.info = prefix.info ) }
+            if ( q3 == 2 ) { cur.res <- queryMarker ( marker = m, query.file = que.lacksPlasmaMembranePart,     prefix.info = prefix.info ) }
+            if ( q3 == 3 ) { cur.res <- queryMarker ( marker = m, query.file = que.hasHighPlasmaMembraneAmount, prefix.info = prefix.info ) }
+            if ( q3 == 4 ) { cur.res <- queryMarker ( marker = m, query.file = que.hasLowPlasmaMembraneAmount,  prefix.info = prefix.info ) }
+            if ( nrow ( cur.res ) == 0 ) {
+                if ( CompInfo == TRUE ) { cat( "No cell populations found which have plasma membrane part", m, "!\n" ) }
+            }
+    
+            # VERY INEFFICIENTLY, cycle through the other markers and assign a penalty 
+            # according to a contradiction count.
+            penalties <- rep ( 0, nrow ( cur.res ) )
+            # Skips the penalty calculator if TRUE (very slow part of the code).
+    #         if ( penalty.skip == FALSE ) {
+    #         for ( other.marker in marker.list[["Negative"]] ) {
+    #             for ( i in 1:nrow ( cur.res ) ) {
+    #                 temp <- queryMarker ( marker = other.marker, query.file = que.hasPMPsingle,
+    #                                         celllabel = cur.res[i, 'celllabel'], prefix.info = prefix.info )
+    #                 if ( nrow ( temp ) > 0 ) {
+    #                   # If one of the negatively expressed markers was found for the current
+    #                   # cell type as "has plasma membrane part", that is a contradiction which
+    #                   # should be penalized, proportionally to the number of markers in total.
+    #                   penalties[i] <- penalties[i] - 1 / length ( unlist ( marker.list ) )
+    #                 }
+    #             }
+    #         }
+    #         # Similarly for the positive markers showing as negative.
+    #         for ( other.marker in setdiff ( marker.list[["Positive"]], m ) ) {
+    #             for ( i in 1:nrow ( cur.res ) ) {
+    #                 temp <- queryMarker ( marker = other.marker, query.file = que.lacksPMPsingle,
+    #                                         celllabel = cur.res[i, 'celllabel'], prefix.info = prefix.info )
+    #                 if ( nrow ( temp ) > 0 ) {
+    #                     # If one of the other positively expressed markers was found for the current
+    #                     # cell type as "lacks plasma membrane part", that is a contradiction which
+    #                     # should be penalized, proportionally to the number of markers in total.
+    #                     penalties[i] <- penalties[i] - 1 / length ( unlist ( marker.list ) )
+    #                 }
+    #             }
+    #         }
+    #         } # end of penalty skip if statement.
+            
+            
+            cur.res <- cbind ( cur.res, penalties )
+            temp.clean.res <- tabulateResults ( cur.res )
+            temp.name <- marker.list.short[[q3]][which ( m == marker.list[[q3]] )]
+            fname <- paste ( save.dirResults, 'results_', temp.name, '.csv', sep = "" )
+            # save the marker's data to skip the query next time
+            write.csv ( temp.clean.res, fname, row.names = FALSE )
+            res <- rbind ( res, cur.res )
+            if ( length ( which ( temp.clean.res[,"Number Of Hits"]  > 1 )) >= 1 ) { # Number Of Hits column
+                warning ( "You are receiving more marker labels than markers that were input. Most likely the input markers are not defined correctly." )
             }
         }
-        # Similarly for the positive markers showing as negative.
-        for ( other.marker in setdiff ( marker.list[["Positive"]], m ) ) {
-            for ( i in 1:nrow ( cur.res ) ) {
-                temp <- queryMarker ( marker = other.marker, query.file = que.lacksPMPsingle,
-                                        celllabel = cur.res[i, 'celllabel'], prefix.info = prefix.info )
-                if ( nrow ( temp ) > 0 ) {
-                    # If one of the other positively expressed markers was found for the current
-                    # cell type as "lacks plasma membrane part", that is a contradiction which
-                    # should be penalized, proportionally to the number of markers in total.
-                    penalties[i] <- penalties[i] - 1 / length ( unlist ( marker.list ) )
-                }
-            }
-        }
-        } # end of penalty skip if statement.
-        cur.res <- cbind ( cur.res, penalties )
-        temp.clean.res <- tabulateResults ( cur.res )
-        temp.name <- marker.list.short[["Positive"]][which ( m == marker.list[["Positive"]] )]
-        fname <- paste ( save.dirResults, 'results_', temp.name, '.csv', sep = "" )
-        # save the marker's data to skip the query next time
-        write.csv ( temp.clean.res, fname, row.names = FALSE )
-        res <- rbind ( res, cur.res )
-    }
-
-    # Now cycle through the negative markers and construct the information similarly.
-    for ( m in marker.list[["Negative"]] ) {
-        if ( CompInfo == TRUE ) { cat( "Locating marker", m, "\n" ) }
-        cur.res <- queryMarker ( marker = m, query.file = que.lacksPlasmaMembranePart, prefix.info = prefix.info )
-        if ( nrow ( cur.res ) == 0 ) {
-            if ( CompInfo == TRUE ) { cat( "No cell populations found which lack plasma membrane part", m, "!\n" ) }
-        }
-        # VERY INEFFICIENTLY, cycle through the other markers and assign a penalty 
-        # according to contradiction count.
-        penalties <- rep ( 0, nrow ( cur.res ) )
-        # Skips the penalty calculator if TRUE (very slow part of the code).
-        if ( penalty.skip == FALSE ) {
-        for ( other.marker in setdiff ( marker.list[["Negative"]], m ) ) {
-            for ( i in 1:nrow ( cur.res ) ) { 
-                temp <- queryMarker ( marker = other.marker, query.file = que.hasPMPsingle,
-                                        celllabel = cur.res[i, 'celllabel'], prefix.info = prefix.info )
-                if ( nrow ( temp ) > 0 ) {
-                    # If one of the negatively expressed markers was found for the current
-                    # cell type as "has plasma membrane part", that is a contradiction which
-                    # should be penalized, proportionally to the number of markers in total.
-                    penalties[i] <- penalties[i] - 1 / length ( unlist ( marker.list ) )
-                }
-            }
-        }
-        for ( other.marker in marker.list[["Positive"]] ) {
-            for ( i in 1:nrow ( cur.res ) ) {
-                temp <- queryMarker ( marker = other.marker, query.file = que.lacksPMPsingle,
-                                        celllabel = cur.res[i, 'celllabel'], prefix.info = prefix.info )
-                if ( nrow ( temp ) > 0 ) {
-                    # If one of the other positively expressed markers was found for the current
-                    # cell type as "lacks plasma membrane part", that is a contradiction which
-                    # should be penalized, proportionally to the number of markers in total.
-                    penalties[i] <- penalties[i] - 1 / length ( unlist ( marker.list ) )
-                }
-            }
-        }
-        } # end of penalty skip if statement
-        cur.res <- cbind ( cur.res, penalties )
-        temp.clean.res <- tabulateResults ( cur.res )
-        temp.name <- marker.list.short[["Negative"]][which ( m == marker.list[["Negative"]] )]
-        fname <- paste ( save.dirResults, 'results_', temp.name, '.csv', sep = "" )
-        # save the marker's data to skip the query next time
-        write.csv ( temp.clean.res, fname, row.names = FALSE )
-        res <- rbind ( res, cur.res )
     }
 
     # For each returned owl object ID, tabulate how many times the result was 
@@ -265,6 +240,7 @@ if ( skipQuery == TRUE ) {
     # the penalty tally will be subtracted to get a final overall score for each
     # population label.
     clean.res <- tabulateResults ( res )
+
 }
     
 # Save the results. 
@@ -529,10 +505,6 @@ for ( q4 in markersToQuery ) {
     }
     finalResults[["Cell_Label"]][[listPhenotypes[q4]]] <- temp.string
 }
-
-
-# # Store results in a table
-# finalResults["Cell Label"] <- list ( t ( listPhenotypes ) )
 
 # Output for the user
 if ( CompInfo == TRUE ) { 

@@ -2,3 +2,6 @@
 0.99.1: Changes done based on suggestions from the reviewer.
 0.99.2: Added Parents_query_archive.rda and Parents_Names.rda to save time querying by already having a pre-loaded archive.
 0.99.3: Minor changes with the unit test and RECOMMENDED comments from BiocCheck.
+1.0.0: Same as previous. Bumped by BioConductor.
+1.1.0: Same as previous. Bumped by BioConductor.
+1.2.0: Added hi/high/bri/bright and lo/low/dim as inputs. Added warning messages for incorrect input.
