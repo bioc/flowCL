@@ -33,13 +33,7 @@ flowCL executes queries against the Cell Ontology (CL), available at http://cell
 
 # Load a pre-loaded archive. Skipping this chuck will cause flowCL to 
 ## slowly build a new one.
-data(Parents_query_archive, Parents_Names)
-dir.create ( paste(getwd(),"/flowCL_results/parents_query",sep=""), 
-    showWarnings=FALSE, recursive=TRUE )
-for (j in 1:length(Parents_Names))
-    write.table(Parents_query_archive[[j]],paste(getwd(),
-    "/flowCL_results/parents_query/", Parents_Names[[j]], 
-    sep=""), sep=",", row.names = FALSE)
+flowCL("archive")
 
 # Simple two marker example
 Res <- flowCL("CCR7+CD45RA+")

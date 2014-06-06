@@ -8,13 +8,16 @@
     flowCL uses quaries to match a phenotype to a cell type from the cell ontology. If the match is not unique, then the best alternative is returned. 
 }
 \usage{
-flowCL ( MarkerList = "HIPC", Indices = NULL, CompInfo = FALSE, 
-    KeepArch = TRUE, MaxHitsPht = 5, OntolNamesTD = FALSE, 
-    ResetArch = FALSE, VisualSkip = FALSE ) 
+flowCL ( MarkerList = "HIPC", ExpMrkrLst = NULL, Indices = NULL,
+    CompInfo = FALSE, KeepArch = TRUE, MaxHitsPht = 5, 
+    OntolNamesTD = FALSE, ResetArch = FALSE, VisualSkip = FALSE ) 
 }
 \arguments{
     \item{MarkerList}{
-        A list of phenotypes to query the cell ontology with (Ex. "CD3+CD4-CD8+" as a single element of the list). There is an option to use a preloaded list. This preloaded list can be accessed by pre-running data(listPhenotype_flowCL) or just inputting "HIPC" into MarkerList. This will first query all the individual markers, then will query all the common HIPC phenotypes. 
+        A list of phenotypes to query the cell ontology with (Ex. "CD3+CD4-CD8+" as a single element of the list). There is an option to use a preloaded list. This preloaded list can be used by inputting "HIPC" into MarkerList. This will first query all the individual markers, then will query all the common HIPC phenotypes. 
+    }
+\item{ExpMrkrLst}{
+        A list of all of the phenotypes that were used in the experiment. This will be used to inform the user that a certain marker could have been used to further identify the correct population. If ExpMrkLst is left blank, flowCL will define ExpMrkLst as each phenotype in MarkerList. If ExpMrkrLst has only one element, flowCL will define every ExpMrkrLst phenotype as being the same as the one input.
     }
     \item{Indices}{
         A vector of indices that dictate which of the MarkerList phenotypes will be queried. If left blank, all phenotypes in the list will be queried.
@@ -39,7 +42,7 @@ flowCL ( MarkerList = "HIPC", Indices = NULL, CompInfo = FALSE,
     }
 }
 \value{
-    A list containing N + 2 elements. Where N is the number of phenotypes queried. Each of these N elements contains information for plotting the results. The last two elements show a table and the cell labels. The table is a list of all the related information of each phenotype queried. This table is mainly for users to see the results in R. The cell labels element lists the cell labels, in order of highest hits, in a more convient way to be extracted and used by other R packages and functions.  
+    A list containing N + 5 elements. Where N is the number of phenotypes queried. Each of these N elements contains information for plotting the results. The other five elements show the cell labels (Cell_Labels), the matching markers in a list form (Marker_Groups) and a bracket form (Markers), ranking scores (Ranking) and a table (Table). The cell labels element lists the cell labels in order of highest score based on their ranking, which is in a form easily extracted and used by other R packages and functions. Marker_Groups and Markers list markers that were queried and that are part of a certain cell type. In Markers these markers are displayed in the form of  { A } B ( C ) [ D ]. A and B together make up the markers input for the query. B, C and D together are the markers that make up the definition of the particular cell type. C lists the markers that were pat of the experiment that were not part of the query, while D lists all other markers that make up the cell type that were not part of the experimental markers. A lists all the markers in the input for the query that were not required for that particular cell type. The table is a list of all the related information of each phenotype queried. This table is mainly for users to see the results in R. 
 }
 
 \details{
@@ -57,13 +60,7 @@ flowCL ( MarkerList = "HIPC", Indices = NULL, CompInfo = FALSE,
 
 # Load a pre-loaded archive. Skipping this chuck will cause flowCL to 
 ## slowly build a new one.
-data(Parents_query_archive, Parents_Names)
-dir.create ( paste(getwd(),"/flowCL_results/parents_query",sep=""), 
-    showWarnings=FALSE, recursive=TRUE )
-for (j in 1:length(Parents_Names))
-    write.table(Parents_query_archive[[j]],paste(getwd(),
-    "/flowCL_results/parents_query/", Parents_Names[[j]], 
-    sep=""), sep=",", row.names = FALSE)
+flowCL("archive")
 
 # Simple two marker example
 Res <- flowCL("CCR7+CD45RA+")

@@ -1,9 +1,6 @@
 #################################################################################
 # supporting functions (flowCL: Semantic labelling of flow cytometric cell populations)
-# Author: Justin Meskas (jmeskas@bccrc.ca)
-# Date last modified: April 30, 2014
-# Author: Radina Droumeva (radina.droumeva@gmail.com )
-# Date last modified: July 19, 2013
+# Authors: Justin Meskas (jmeskas@bccrc.ca), Radina Droumeva (radina.droumeva@gmail.com )
 #################################################################################
 
 
@@ -12,8 +9,16 @@
 cdTest <- function ( MarkerList ) {
     ShouldBreak <- FALSE
     for ( p1 in 1:length(MarkerList)){
-        if ( regexpr ( pattern="cd", MarkerList[p1] )[[1]] >= 1) { 
+        if ( regexpr ( pattern="cd", MarkerList[p1] )[[1]] >= 1) {
             warning ( paste("You have input \"cd\" in ", MarkerList[p1], ". flowCL is case sensitive. CD should be capitalized.", sep="") )
+            ShouldBreak <- TRUE
+        }
+        if ( regexpr ( pattern="cD", MarkerList[p1] )[[1]] >= 1) {
+            warning ( paste("You have input \"cD\" in ", MarkerList[p1], ". flowCL is case sensitive. CD should be capitalized.", sep="") )
+            ShouldBreak <- TRUE
+        }
+        if ( regexpr ( pattern="Cd", MarkerList[p1] )[[1]] >= 1) {
+            warning ( paste("You have input \"Cd\" in ", MarkerList[p1], ". flowCL is case sensitive. CD should be capitalized.", sep="") )
             ShouldBreak <- TRUE
         }
     }
@@ -24,7 +29,7 @@ cdTest <- function ( MarkerList ) {
 # Consider to change this to allow for any marker with a period to change to a dash
 changeHLADR <- function ( marker.list ) {
     
-    for ( q2 in 1:length(marker.list)){    
+    for ( q2 in 1:length(marker.list)){
         if ( length ( marker.list[[q2]] ) >= 1 ) {
             for ( q1 in 1:length ( marker.list[[q2]] ) ) {
                 if ( marker.list[[q2]][q1] == "HLA.DR" ) {
@@ -37,10 +42,176 @@ changeHLADR <- function ( marker.list ) {
 }
 
 #################################################################################
+# Prepares the marker list to be put into listPhenotype and $Table
+cleanMarkersList <- function ( temp ) {
+    
+    fullname <- c()
+    for ( y1 in 1: length(temp)){
+        fullname <- paste(fullname , y1, ") ", temp[y1] , "\n", sep="")
+    }
+    fullname <- substr ( fullname, 1, nchar ( fullname ) - 1 )
+    return ( fullname )
+}
+
+#################################################################################
+# Prepares the ranking list to be put into listPhenotype and $Table
+cleanRankingList <- function ( temp ) {
+    
+    fullname <- c()
+    for ( y1 in 1: length(temp)){
+        fullname <- paste(fullname , y1, ") ", round(temp[y1], digits = 3) , "\n", sep="")
+    }
+    fullname <- substr ( fullname, 1, nchar ( fullname ) - 1 )
+    return ( fullname )
+}
+
+#################################################################################
+# Organize which markers were required, which were extra, which were in the experiment and not used, 
+# and which additional ones would be required to get a perfect match.
+MarkerGroupsFunc <- function ( temp.string, query.dir.list, postfix, save.dir, query.file.list, prefix.info, CompInfo, marker.list.short, exp.marker.list.short, AllMarkerGroups, endpoint=endpoint ) {
+
+    MarkerGroups <- list()
+    for ( y1 in 1 : length(temp.string) ){
+        temp.res.all <- c()
+        for ( y2 in 1:4 ) {
+            fname <- paste( query.dir.list[y2], temp.string[[y1]][1], postfix[y2], sep="")
+            if( !file.exists ( fname ) ) {
+                if ( CompInfo == TRUE && y2 == 1 ) { cat ( "Querying cell label:", temp.string[[y1]][1], "\n" ) }
+                temp.res <- queryMarker ( celllabel = temp.string[[y1]][1], query.file = query.file.list[[y2]], prefix.info = prefix.info, CompInfo=CompInfo, endpoint=endpoint, exactMatch=TRUE)  
+                if ( nrow(temp.res) == 0 ){ # If nothing create a non-blank csv file
+                    temp.res <- matrix ( ncol = 2, nrow = 0 )
+                    colnames ( temp.res ) <- c ( "ID", "Synonym Match" )
+                }
+                # Create 4 csv files for each returned cell label (has, lacks, low, high)
+                write.csv ( temp.res, fname, row.names = FALSE )
+            }
+            else {
+                temp.res <- read.csv ( fname, as.is=TRUE )
+            }
+            temp.res.all <- rbind(temp.res.all, temp.res) # combine all 4 csv files
+        }
+    
+        fname <- paste ( save.dir, "markers_ShortName_OntologyName.csv", sep = "" )
+        markers_ShortName_OntologyName <- read.csv ( fname , header = FALSE )
+        markers_ShortName_OntologyName <- as.matrix ( markers_ShortName_OntologyName )
+        for ( p1 in 1 : nrow(temp.res.all)) {
+            markerIndices <- which ( markers_ShortName_OntologyName[,2] == temp.res.all[p1,"markerlabel"] )
+            if ( length ( markerIndices ) == 0 ) { # If the Ontology marker name is not in the csv file then use the Ontology marker name instead of the short marker label
+                temp.res.all[p1,4] <- temp.res.all[p1,"markerlabel"]
+            } else {
+                if( length( markerIndices ) == 1) { # Use the short marker label in csv file
+                    temp.res.all[p1,4] <- markers_ShortName_OntologyName[markerIndices , 1]
+                } else { # pick the one from markers_ShortName_OntologyName that has the lowest amount of characters
+                    temp.res.all[p1,4] <- markers_ShortName_OntologyName[markerIndices[which ( min(nchar(markers_ShortName_OntologyName[markerIndices , 1])) == nchar(markers_ShortName_OntologyName[markerIndices , 1]))], 1]
+                }
+            }
+        }
+        # Add tags
+        suppressWarnings(temp.res.all[,6] <- temp.res.all[,4])     
+        if( length(which(temp.res.all[,6]=="CD3z")) >=1 ) {
+            temp.res.all[which(temp.res.all[,6]=="CD3z"), 6] <- "CD3"
+        }
+        if( length(which(temp.res.all[,6]=="CD3e")) >=1 ) {
+            temp.res.all[which(temp.res.all[,6]=="CD3e"), 6] <- "CD3"
+        }
+        suppressWarnings(temp.res.all[which(temp.res.all[,3] == "lacks_plasma_membrane_part")     ,6] <- paste(temp.res.all[which(temp.res.all[,3] == "lacks_plasma_membrane_part"),     6], "-", sep="")  )
+        suppressWarnings(temp.res.all[which(temp.res.all[,3] == "has_plasma_membrane_part")       ,6] <- paste(temp.res.all[which(temp.res.all[,3] == "has_plasma_membrane_part"),       6], "+", sep="")  )
+        suppressWarnings(temp.res.all[which(temp.res.all[,3] == "has_low_plasma_membrane_amount") ,6] <- paste(temp.res.all[which(temp.res.all[,3] == "has_low_plasma_membrane_amount"), 6], "lo", sep="") )
+        suppressWarnings(temp.res.all[which(temp.res.all[,3] == "has_high_plasma_membrane_amount"),6] <- paste(temp.res.all[which(temp.res.all[,3] == "has_high_plasma_membrane_amount"),6], "hi", sep="") )
+        # remove all duplicates of CD3's
+        if( length(which(temp.res.all[,6]=="CD3+")) > 1 ) {
+            temp.res.all <- temp.res.all[-which(temp.res.all[,6]=="CD3+")[-1], ]
+        }
+        if( length(which(temp.res.all[,6]=="CD3hi")) > 1 ) {
+            temp.res.all <- temp.res.all[-which(temp.res.all[,6]=="CD3hi")[-1], ]
+        }
+        if( length(which(temp.res.all[,6]=="CD3lo")) > 1 ) {
+            temp.res.all <- temp.res.all[-which(temp.res.all[,6]=="CD3lo")[-1], ]
+        }
+        temp.list.tags <- setdiff(temp.res.all[,6], unlist( marker.list.short ) )
+        temp.list.No.tags <- temp.list.tags 
+        # Remove tags
+        temp.list.No.tags <- gsub("[+]$",  "", temp.list.No.tags); temp.list.No.tags <- gsub("-$",  "", temp.list.No.tags)
+        temp.list.No.tags <- gsub("hi$", "", temp.list.No.tags);   temp.list.No.tags <- gsub("lo$", "", temp.list.No.tags)
+    
+        AdditionalMarkers <- setdiff(  temp.list.No.tags, unlist( exp.marker.list.short ) ) # markers that are part of the cell label marker list but not part of the expermental marker list
+        ExpNeededMarkers  <- intersect(temp.list.No.tags, unlist( exp.marker.list.short ) ) # markers that are part of the cell label marker list and part of the expermental marker list
+        
+        # Put the tags back onto the marker labels
+        if(length(AdditionalMarkers) > 0 && length(temp.list.tags) > 0 ){
+            for ( w1 in 1 : length(AdditionalMarkers)){
+                for ( w2 in 1 : length(temp.list.tags)){
+                    if( grepl(AdditionalMarkers[w1], temp.list.tags[w2])){
+                        AdditionalMarkers[w1] <- temp.list.tags[w2]
+                    }
+                }
+            }
+        }
+        # Put the tags back onto the marker labels
+        if(length(ExpNeededMarkers) > 0 && length(temp.list.tags) > 0 ){
+            for ( w1 in 1 : length(ExpNeededMarkers)){
+                for ( w2 in 1 : length(temp.list.tags)){
+                    if( grepl(ExpNeededMarkers[w1], temp.list.tags[w2])){
+                        ExpNeededMarkers[w1] <- temp.list.tags[w2]
+                    }
+                }
+            }
+        }
+        NeededMarkers <- intersect(temp.res.all[,6], unlist( marker.list.short ) ) # markers that are part of the cell label marker list and are part of the input marker list
+        UnneededMarkers <- setdiff( unlist( marker.list.short ), temp.res.all[,6] ) # markers that are part of the input marker list but not part of the cell label marker list
+        
+        # check to see if there are copies of the same marker. This happens when has_pmp is in the CL at the same time as low_PMA or high_PMA
+        if ( length(ExpNeededMarkers) >= 1 ) {
+            tmp1 <- NeededMarkers
+            tmp1 <- gsub("[+]$",  "", tmp1); tmp1 <- gsub("-$",  "", tmp1); tmp1 <- gsub("hi$", "", tmp1);   tmp1 <- gsub("lo$", "", tmp1)
+            tmp2 <- ExpNeededMarkers
+            tmp2 <- gsub("[+]$",  "", tmp2); tmp2 <- gsub("-$",  "", tmp2); tmp2 <- gsub("hi$", "", tmp2);   tmp2 <- gsub("lo$", "", tmp2)
+            RemoveIndices <- NULL
+            # for problems with has_pmp in the CL at the same time as low_PMA or high_PMA
+            for ( w1 in 1 : length(tmp2) ) {
+                if( length(which (tmp1 == tmp2[w1]) >= 1 ) ) {
+                    RemoveIndices <- c(RemoveIndices, w1)
+                }
+            }
+            if ( !is.null(RemoveIndices) ) { # Remove extra marker restriction
+                ExpNeededMarkers <- ExpNeededMarkers[-RemoveIndices]
+            }
+        }
+        if ( AllMarkerGroups == FALSE ){ 
+            MarkerGroups[[y1]] <- list(UnneededMarkers, NeededMarkers, ExpNeededMarkers, AdditionalMarkers)
+        } else {
+            MarkerGroups[[y1]] <- list(NeededMarkers, ExpNeededMarkers, AdditionalMarkers)
+        }
+    }
+    return(MarkerGroups)
+}
+#################################################################################
+# Removes tags and leaves the hyphen in HLA-DR
+tempMarkerShort <- function (temp.marker.short) {
+
+    temp.marker.short <- sub("HLA-DR", "HLA.DR", temp.marker.short); 
+#     temp.marker.short <- sub("CD3-", "CD3e-", temp.marker.short); 
+#     temp.marker.short <- sub("CD3-", "CD3e-", temp.marker.short); 
+#     temp.marker.short <- sub("CD3[+]", "CD3zzz", temp.marker.short); 
+
+    temp.marker.short <- sub("-", "", temp.marker.short); 
+    temp.marker.short <- sub("[+]", "", temp.marker.short);          
+    temp.marker.short <- sub("lo", "", temp.marker.short);
+    temp.marker.short <- sub("hi", "", temp.marker.short); 
+    temp.marker.short <- sub("HLA[.]DR", "HLA-DR", temp.marker.short); 
+#     temp.marker.short <- sub("CD3[.]", "CD3-", temp.marker.short); 
+#     temp.marker.short <- sub("CD3zzz", "CD3+", temp.marker.short); 
+
+
+    return(temp.marker.short)
+}
+
+#################################################################################
 # Removes all the non first generation children from the child.analysis and then
 # produces a flow chart.
 
-treeDiagram <- function ( child.analysis, clean.res, phenotype, OntolNamesTD, marker.list.short, marker.list, save.dir, listColours_flowCL = "" ) {
+treeDiagram <- function ( child.analysis, clean.res, phenotype, OntolNamesTD, marker.list.short, marker.list, save.dir, listColours_flowCL = "" ,
+                          MarkerGroups = "", CellLabels = "" ) {
     
     # Sort the child.analysis by starting with the cell population which has
     # the most children to the one with the least-- i.e. is the most likely to be the 
@@ -49,7 +220,6 @@ treeDiagram <- function ( child.analysis, clean.res, phenotype, OntolNamesTD, ma
     sort.child <- child.analysis[order ( child.lengths, decreasing = TRUE )]
     labels <- names ( sort.child )
     arrows.colour <- arrows.label <- arrows.dashed.solid <- arrows.head <- NULL
-  
     if ( OntolNamesTD == TRUE ) { marker.list.short <- marker.list }
   
     # A quadruple for loop (probably not the most elegant, but it is still fast ). Start with q8,
@@ -98,7 +268,6 @@ treeDiagram <- function ( child.analysis, clean.res, phenotype, OntolNamesTD, ma
             }
         }
     }
-        
     labels.colour <- labels
   
     # Load all predetermined colours
@@ -132,20 +301,23 @@ treeDiagram <- function ( child.analysis, clean.res, phenotype, OntolNamesTD, ma
                 }
 
                 # make perfect matches green  
-                if ( count.markers == length ( unlist ( marker.list ) ) ) {        
-                    labels.colour[q15] <- "lightgreen"
-                    count.markers <- 0
-                } else  { # colour the partial matches a beige colour
-                    labels.colour[q15] <- "bisque"
-                    count.markers <- 0     
+                if ( length ( which(CellLabels == labels[q15]) ) != 0) {
+                    if ( count.markers == length(unlist(MarkerGroups[[ as.numeric ( which(CellLabels == labels[q15]) )]] )) ) {
+                        labels.colour[q15] <- "lightgreen"
+                        count.markers <- 0
+                    } else { # colour the partial matches a beige colour
+                        labels.colour[q15] <- "bisque"
+                        count.markers <- 0     
+                    }
                 }
+                
                 break
             } else  { # colour all the non-important parents white
                 labels.colour[q15] <- "white"
             }
         }
     }
-
+    
     if ( length ( marker.list[[1]] ) != 0 ) { # colour positive markers sky blue
         for ( q19 in 1:( length ( marker.list[[1]] ) ) ) {
             labels.colour[length ( labels.colour ) + 1] <- "skyblue"
@@ -178,13 +350,12 @@ treeDiagram <- function ( child.analysis, clean.res, phenotype, OntolNamesTD, ma
 #   eAttrs$arrowhead <- structure(c ( arrows.head ), .Names = c ( arrows.label ) )
     
     attrs <- list( node = list ( shape="ellipse", fontsize = 14, fixedsize=FALSE ), graph = list ( rankdir = "BT" ) )
-
     # create a pdf flow chart
-    child.file.name <- paste ( save.dir, "tree_", phenotype, ".pdf", sep = "" )     
+    child.file.name <- paste ( save.dir, "tree_", phenotype, ".pdf", sep = "" )   
+    
     pdf ( file = child.file.name, width = 10.5, height = 8 )    
     suppressWarnings ( plot ( rEG, nodeAttrs = nAttrs, edgeAttrs = eAttrs, attrs = attrs ) )
     dev.off ( )
-
     return ( list ( rEG, nAttrs, eAttrs, attrs ) )
 }
 
@@ -200,21 +371,25 @@ phenoParse <- function ( phenotype )  {
   
     # First split up the string based on +, -, hi or lo to get the markers
     markers <- unlist ( strsplit ( x = phenotype, split = "\\+|\\-|hi|lo" ) )
-    # Next, split the original string based on the markers found above, leaving
-    # only the signs (remove first result as there is no leading sign )
-    
+
     for ( k in 1:length(markers)){
         if ( nchar(markers[k]) <= 2 ) {
             warning ( "Your input markers are most likely ill defined. Most markers have labels and synonyms that are at least 3 characters long." )
         }
     }
-   
+
+    # Next, split the original string based on the markers found above, leaving
+    # only the signs (remove first result as there is no leading sign )
     signs <- unlist ( strsplit ( x = phenotype, split = paste ( markers, sep = "", collapse="|" ) ) )[-1]
+    
+    if (length(signs) != (length(markers))) {
+        warning ( "The number of tags does not match the number of markers." )
+        return ()
+    }
     
     # Return a list of positive, negative, low and high markers
     res <- list ( `Positive` = markers[signs == "+"], `Negative` = markers[signs == "-"] , 
                   `High\\Bright` = markers[signs == "hi"], `Low\\Dim` = markers[signs == "lo"])
-    
     return ( res )
 }
 
@@ -309,12 +484,15 @@ timeOutput ( Sys.Date ( ) )
 
 #################################################################################
 # Finds and stores information for display in a .csv file
-updateLists <- function ( clean.res, MaxHitsPht ) {
+updateLists <- function ( clean.res, MaxHitsPht, AddPlusMore ) {
     # Creates the lists MarkerLabels, CellLabels, PhenotypeID and CellID
     BreakTrue <- FALSE
-    if ( max ( clean.res[ , 'Number Of Hits'] ) >= 1 ) {
+
+    if ( max ( as.numeric ( clean.res[ , 'Number Of Hits'] ) ) >= 1 ) {
         for ( q2 in 1:min ( length ( clean.res[ ,'Number Of Hits'] ), MaxHitsPht ) ) {
-            if ( q2 == 1 & ( clean.res[q2, 'Number Of Hits'] ) == max ( clean.res[ , 'Number Of Hits'] ) ) {
+
+#             if ( q2 == 1 & ( clean.res[q2, 'Number Of Hits'] ) == max ( as.numeric ( clean.res[ , 'Number Of Hits'] ) ) ) {
+            if ( q2 == 1 ) {
                 listMarkerLabels.temp <- paste ( q2, ") ", ( clean.res[q2,'markerlabel'] ), "\n", sep = "" ) 
                 listCellLabels.temp   <- paste ( q2, ") ", ( clean.res[q2,'celllabel'] ), "\n", sep = "" )
                 # Look in the Label of the marker ID for "PR" then pulls out the PR and the numbers that follow 
@@ -351,8 +529,10 @@ updateLists <- function ( clean.res, MaxHitsPht ) {
                 }
                 # Stores this string into the lists
                 listCellID.temp  <- paste ( q2,") ", temp.string, "\n", sep = "" )
+                next
             }
-            if ( q2 > 1 & ( clean.res[q2,'Number Of Hits'] ) == max ( clean.res[,'Number Of Hits'] ) ) {
+#             if ( q2 > 1 & ( clean.res[q2,'Number Of Hits'] ) == max ( clean.res[,'Number Of Hits'] ) ) {
+            if ( q2 > 1 ) {
                 listMarkerLabels.temp <- paste ( listMarkerLabels.temp , q2, ") ", ( clean.res[q2,'markerlabel'] ), "\n", sep = "" )
                 listCellLabels.temp   <- paste ( listCellLabels.temp   , q2, ") ", ( clean.res[q2,'celllabel'] ), "\n", sep = "" )
         
@@ -390,45 +570,72 @@ updateLists <- function ( clean.res, MaxHitsPht ) {
                 }
                 # Stores this string into the lists
                 listCellID.temp  <- paste ( listCellID.temp  , q2, ") ", temp.string, "\n", sep = "" )
+                next
             }
-            if ( ( clean.res[q2,'Number Of Hits'] ) != max ( clean.res[ , 'Number Of Hits'] ) ) {
+#             if ( ( clean.res[q2,'Number Of Hits'] ) != max ( as.numeric ( clean.res[ , 'Number Of Hits'] ) ) ) {
+#             if ( ( clean.res[q2,'Number Of Hits'] ) != max ( as.numeric ( clean.res[ , 'Number Of Hits'] ) ) ) {
                 BreakTrue <- TRUE
                 break
-            }  
+#             }  
         }# end of for loop
     }# end of if statement
-  
+
     # If there is more than 5 elements to store, then the rest is cut off and a "+ more" is displayed
-    if ( length ( clean.res[ , 'Number Of Hits'] ) > MaxHitsPht & BreakTrue == FALSE ) {
+    if ( length ( as.numeric ( clean.res[ , 'Number Of Hits'] ) ) > MaxHitsPht & BreakTrue == FALSE ) {
         listMarkerLabels.temp <- paste ( listMarkerLabels.temp, "+ more" )
         listCellLabels.temp   <- paste ( listCellLabels.temp,   "+ more" )
         listPhenotypeID.temp  <- paste ( listPhenotypeID.temp,  "+ more" )
         listCellID.temp       <- paste ( listCellID.temp,       "+ more" )
-    } else  {  # Removes the last \n from the string for better formatting int the .csv file
+    } else  {  # Removes the last \n from the string for better formatting into the .csv file
         listMarkerLabels.temp <- substr ( listMarkerLabels.temp, 1, nchar ( listMarkerLabels.temp ) - 1 )
         listCellLabels.temp   <- substr ( listCellLabels.temp,   1, nchar ( listCellLabels.temp )   - 1 )
         listPhenotypeID.temp  <- substr ( listPhenotypeID.temp,  1, nchar ( listPhenotypeID.temp )  - 1 )
         listCellID.temp       <- substr ( listCellID.temp,       1, nchar ( listCellID.temp )       - 1 )
     }
-  
+    
+    if( AddPlusMore == TRUE ) {
+        listMarkerLabels.temp <- paste ( listMarkerLabels.temp, "\n + more", sep="" )
+        listCellLabels.temp   <- paste ( listCellLabels.temp,   "\n + more", sep="" )
+        listPhenotypeID.temp  <- paste ( listPhenotypeID.temp,  "\n + more", sep="" )
+        listCellID.temp       <- paste ( listCellID.temp,       "\n + more", sep="" )
+    }
     return ( c ( listMarkerLabels.temp, listCellLabels.temp, listPhenotypeID.temp, listCellID.temp ) )
 }
+###############################################################3
+# Update the markers_ShortName_OntologyName.csv file
+UpdateMarkers_ShortName_OntologyName <- function(save.dir, marker.list.short, marker.list, q3, q1) {
+    
+    fname <-  paste ( save.dir, "markers_ShortName_OntologyName.csv", sep = "" )
+    temp.table <- read.csv ( fname, header = FALSE ) ;   temp.table <- as.matrix ( temp.table )
+    temp.matrix <- matrix ( 0, length ( temp.table[,1] ) + 1, 2 )
+    temp.matrix[1:length ( temp.table[,1] ) , ] <- temp.table
+    temp.table <- temp.matrix
+    temp.marker.short <- as.character ( marker.list.short[[q3]][q1] )
+    
+    temp.marker.short <- tempMarkerShort(temp.marker.short)
+
+    temp.table[length ( temp.table[,1] ), 1] <- temp.marker.short    
+    temp.table[length ( temp.table[,1] ), 2] <- paste ( marker.list[[q3]][q1] )
+    write.table(temp.table, fname, sep = ",", col.names = FALSE, row.names = FALSE) 
+
+}
+
 ###############################################################3
 # List of phenotypes commonly used by HIPC
 listPhenotypes_flowCL <- function ( ) {
 
 return <- c(
-"CD3+","CD4+","CD8+","CCR7+","CD45RA+","CD38+","HLA.DR+","CD127+","CD25+","CCR4+","CD45RO+","CXCR3+",
+"CD3+","CD4+","CD8+","CCR7+","CD45RA+","CD38+","HLA-DR+","CD127+","CD25+","CCR4+","CD45RO+","CXCR3+",
 "CCR6+","CD19+","CD20+","CD27+","IgD+","CD24+","CD14+","CD11c+","CD123+","CD16+","CD56+",
-"CD3-","CD4-","CD8-","CCR7-","CD45RA-","CD38-","HLA.DR-","CD127-","CD25-","CCR4-","CD45RO-","CXCR3-",
+"CD3-","CD4-","CD8-","CCR7-","CD45RA-","CD38-","HLA-DR-","CD127-","CD25-","CCR4-","CD45RO-","CXCR3-",
 "CCR6-","CD19-","CD20-","CD27-","IgD-","CD24-","CD14-","CD11c-","CD123-","CD16-","CD56-",
-"CD127lo","CD24hi","CD38hi","CD27hi","CD56hi","CD56lo",
-"CD3+CD4+CD8-CD38+HLA.DR+",
+"CD127lo","CD24hi","CD38hi","CD27hi","CD56hi","CD56lo", 
+"CD3+CD4+CD8-CD38+HLA-DR+",
 "CD3+CD4+CD8-CCR7+CD45RA+",
 "CD3+CD4+CD8-CCR7+CD45RA-",
 "CD3+CD4+CD8-CCR7-CD45RA-",
 "CD3+CD4+CD8-CCR7-CD45RA+",
-"CD3+CD4-CD8+CD38+HLA.DR+",
+"CD3+CD4-CD8+CD38+HLA-DR+",
 "CD3+CD4-CD8+CCR7+CD45RA+",
 "CD3+CD4-CD8+CCR7+CD45RA-",
 "CD3+CD4-CD8+CCR7-CD45RA-",
@@ -437,7 +644,7 @@ return <- c(
 "CD3+CD4+CD127loCD25+CCR4+CD45RO-",
 "CD3+CD4+CD127loCD25+CCR4+CD45RO+",
 "CD3+CD4+CD127loCD25+CCR4+",
-"CD3+CD4+CD127loCD25+CCR4+HLA.DR+",
+"CD3+CD4+CD127loCD25+CCR4+HLA-DR+",
 "CD3-CD19+CD20+CD27-IgD+",
 "CD3-CD19+CD20+CD27+IgD+",
 "CD3-CD19+CD20+CD27+IgD-",
@@ -446,16 +653,16 @@ return <- c(
 "CD3-CD19-CD20-CD14+",
 "CD3-CD19-CD20-CD14+CD16+",
 "CD3-CD19-CD20-CD14+CD16-",
-"CD3-CD19-CD20-CD14-HLA.DR-CD16+CD56lo",
-"CD3-CD19-CD20-CD14-HLA.DR-CD16-CD56hi",
-"CD3-CD19-CD20-CD14-CD16-CD56-HLA.DR+",
-"CD3-CD19-CD20-CD14-CD16-CD56-HLA.DR+CD11c-CD123+",
-"CD3-CD19-CD20-CD14-CD16-CD56-HLA.DR+CD11c+CD123-",
-"CD3+CD4+CD8-CD38+HLA.DR+",
+"CD3-CD19-CD20-CD14-HLA-DR-CD16+CD56lo",
+"CD3-CD19-CD20-CD14-HLA-DR-CD16-CD56hi",
+"CD3-CD19-CD20-CD14-CD16-CD56-HLA-DR+",
+"CD3-CD19-CD20-CD14-CD16-CD56-HLA-DR+CD11c-CD123+",
+"CD3-CD19-CD20-CD14-CD16-CD56-HLA-DR+CD11c+CD123-",
+"CD3+CD4+CD8-CD38+HLA-DR+",
 "CD3+CD4+CD8-CXCR3+CCR6-",
 "CD3+CD4+CD8-CXCR3-CCR6-",
 "CD3+CD4+CD8-CXCR3-CCR6+",
-"CD3+CD4-CD8+CD38+HLA.DR+",
+"CD3+CD4-CD8+CD38+HLA-DR+",
 "CD3+CD4-CD8+CXCR3+CCR6-",
 "CD3+CD4-CD8+CXCR3-CCR6-",
 "CD3+CD4-CD8+CXCR3-CCR6+")
@@ -569,7 +776,7 @@ return <- c("select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
 "  ?sub owl:onProperty has_low_pma:.",                           
 "  ?sub owl:someValuesFrom ?marker.",                        
 "  ?marker rdfs:label ?markerlabel.  ",                      
-"  has_pmp: rdfs:label ?plabel.",                            
+"  has_low_pma: rdfs:label ?plabel.",                            
 "  FILTER regex(?markerlabel, \"$marker\", \"i\")",          
 "}")                                                         
 }
@@ -588,7 +795,7 @@ return <- c("select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
 "  ?sub owl:onProperty has_high_pma:.",                           
 "  ?sub owl:someValuesFrom ?marker.",                        
 "  ?marker rdfs:label ?markerlabel.  ",                      
-"  has_pmp: rdfs:label ?plabel.",                            
+"  has_high_pma: rdfs:label ?plabel.",                            
 "  FILTER regex(?markerlabel, \"$marker\", \"i\")",          
 "}")                                                         
 }
@@ -713,9 +920,88 @@ return <- c("PREFIX :<http://purl.obolibrary.org/obo/cl.owl#>",
 )  
 }
 
+##################################
+# function for querying celllabel's lacks PMP
+flowCL_query_data_celllabel_lacksPMP <- function(){
+return <- c(
+"select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
+"where",
+"{",
+"  ?x a owl:Class.",
+"  ?x rdfs:label ?celllabel.",
+"  ?x rdfs:subClassOf ?sub.",
+"  ?sub rdf:type owl:Restriction.",
+"  ?sub owl:onProperty lacks_pmp:.",
+"  ?sub owl:someValuesFrom ?marker.",
+"  ?marker rdfs:label ?markerlabel. ",
+"  lacks_pmp: rdfs:label ?plabel.",
+"  FILTER regex(?celllabel, \"$celllabel\", \"i\")",
+"}"
+)
+}
+
+##################################
+# function for querying celllabel's lacks PMP
+flowCL_query_data_celllabel_hasPMP <- function(){
+return <- c(
+"select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
+"where",
+"{",
+"  ?x a owl:Class.",
+"  ?x rdfs:label ?celllabel.",
+"  ?x rdfs:subClassOf ?sub.",
+"  ?sub rdf:type owl:Restriction.",
+"  ?sub owl:onProperty has_pmp:.",
+"  ?sub owl:someValuesFrom ?marker.",
+"  ?marker rdfs:label ?markerlabel. ",
+"  has_pmp: rdfs:label ?plabel.",
+"  FILTER regex(?celllabel, \"$celllabel\", \"i\")",
+"}"
+)
+}
+
+##################################
+# function for querying celllabel's lacks PMP
+flowCL_query_data_celllabel_lowPMA <- function(){
+return <- c(
+"select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
+"where",
+"{",
+"  ?x a owl:Class.",
+"  ?x rdfs:label ?celllabel.",
+"  ?x rdfs:subClassOf ?sub.",
+"  ?sub rdf:type owl:Restriction.",
+"  ?sub owl:onProperty has_low_pma:.",
+"  ?sub owl:someValuesFrom ?marker.",
+"  ?marker rdfs:label ?markerlabel. ",
+"  has_low_pma: rdfs:label ?plabel.",
+"  FILTER regex(?celllabel, \"$celllabel\", \"i\")",
+"}"
+)
+}
+##################################
+# function for querying celllabel's lacks PMP
+flowCL_query_data_celllabel_highPMA <- function(){
+return <- c(
+"select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
+"where",
+"{",
+"  ?x a owl:Class.",
+"  ?x rdfs:label ?celllabel.",
+"  ?x rdfs:subClassOf ?sub.",
+"  ?sub rdf:type owl:Restriction.",
+"  ?sub owl:onProperty has_high_pma:.",
+"  ?sub owl:someValuesFrom ?marker.",
+"  ?marker rdfs:label ?markerlabel. ",
+"  has_high_pma: rdfs:label ?plabel.",
+"  FILTER regex(?celllabel, \"$celllabel\", \"i\")",
+"}"
+)
+}
+
 # unit test function to test if the server is connected and ready to be queried
 test.flowCL.connection <- function()
-{   
+{
     require("RUnit")
     testsuite <- defineTestSuite("flowCL.check",
                     dirs = system.file("unitTests", package="flowCL"),
@@ -723,4 +1009,3 @@ test.flowCL.connection <- function()
     testResult <- runTestSuite(testsuite)
     printTextProtocol(testResult)
 }
-

@@ -1,11 +1,11 @@
-\name{Parents_Names}
-\alias{Parents_Names}
+\name{flowCL_archive}
+\alias{flowCL_archive}
 \docType{data}
 \title{A list of data used to build a local archive.}
 \description{
     A list of data used to build a local archive.
 }
-\usage{data(Parents_Names)}
+\usage{data(flowCL_archive)}
 \author{
     Justin Meskas
 }
