@@ -66,8 +66,8 @@ cleanRankingList <- function ( temp ) {
 }
 
 #################################################################################
-# Organize which markers were required, which were extra, which were in the experiment and not used, 
-# and which additional ones would be required to get a perfect match.
+# Organize which markers are required, which are extra, which are in the experiment and not used, 
+        # and which additional ones would be required to get a perfect match.
 MarkerGroupsFunc <- function ( temp.string, query.dir.list, postfix, save.dir, query.file.list, prefix.info, CompInfo, marker.list.short, exp.marker.list.short, AllMarkerGroups, endpoint=endpoint ) {
 
     MarkerGroups <- list()
@@ -190,19 +190,11 @@ MarkerGroupsFunc <- function ( temp.string, query.dir.list, postfix, save.dir, q
 tempMarkerShort <- function (temp.marker.short) {
 
     temp.marker.short <- sub("HLA-DR", "HLA.DR", temp.marker.short); 
-#     temp.marker.short <- sub("CD3-", "CD3e-", temp.marker.short); 
-#     temp.marker.short <- sub("CD3-", "CD3e-", temp.marker.short); 
-#     temp.marker.short <- sub("CD3[+]", "CD3zzz", temp.marker.short); 
-
     temp.marker.short <- sub("-", "", temp.marker.short); 
     temp.marker.short <- sub("[+]", "", temp.marker.short);          
     temp.marker.short <- sub("lo", "", temp.marker.short);
     temp.marker.short <- sub("hi", "", temp.marker.short); 
     temp.marker.short <- sub("HLA[.]DR", "HLA-DR", temp.marker.short); 
-#     temp.marker.short <- sub("CD3[.]", "CD3-", temp.marker.short); 
-#     temp.marker.short <- sub("CD3zzz", "CD3+", temp.marker.short); 
-
-
     return(temp.marker.short)
 }
 

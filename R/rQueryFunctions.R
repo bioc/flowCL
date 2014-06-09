@@ -94,17 +94,7 @@ ontologyLabel <- function ( marker.list, marker.list.short, CompInfo="", save.di
                 
                 #------------------------------------------------------------- Query exact match in synonym
                 temp.marker <- marker.list[[q3]][q1]
-#                 # Concatenate the query preceded by all prefix information as a single string to be passed to SPARQL
-#                 query <- paste ( c ( prefix.info, que.hasProperSynonym ), collapse="\n" )
-#             
-#                 # Prepare marker for query by ensuring the marker is either followed by the  
-#                 # end of the line or it has a symbol other than a letter, a number or a space with 
-#                 # 'a', 'b', 'e' or 's' after it, as that may indicate a different marker.
-#                 temp.marker <- paste ( "^", temp.marker, "$", collapse="", sep = "" )
-#                 query <- gsub ( "\\$marker", temp.marker, query )
-#                 
-#                 # Execute query
-#                 res <- SPARQL ( url = endpoint, query )$results
+
                 res <- queryMarker ( marker = temp.marker, query.file = que.hasProperSynonym, prefix.info = prefix.info, CompInfo=CompInfo, endpoint=endpoint, exactMatch=TRUE )                
                 
                 if ( nrow ( res ) == 1 ) {
@@ -118,17 +108,7 @@ ontologyLabel <- function ( marker.list, marker.list.short, CompInfo="", save.di
                 
                 #------------------------------------------------------------- Query match in Label
                 temp.marker <- marker.list[[q3]][q1]
-#                 # Concatenate the query preceded by all prefix information as a single string to be passed to SPARQL
-#                 query <- paste ( c ( prefix.info, que.hasProperLabel ), collapse="\n" )
-#             
-#                 # Prepare marker for query by ensuring the marker is either followed by the  
-#                 # end of the line or it has a symbol other than a letter, a number or a space with 
-#                 # 'a', 'b', 'e' or 's' after it, as that may indicate a different marker.
-#                 temp.marker <- paste ( temp.marker, "$|", temp.marker, "[^0-9a-zA-Z-+/][^ abes]", collapse="", sep = "" )
-#                 query <- gsub ( "\\$marker", temp.marker, query )
-#                 
-#                 # Execute query
-#                 res <- SPARQL ( url = endpoint, query )$results
+
                 res <- queryMarker ( marker = temp.marker, query.file = que.hasProperLabel, prefix.info = prefix.info, CompInfo=CompInfo, endpoint=endpoint, exactMatch=FALSE )
             
                 
@@ -147,17 +127,7 @@ ontologyLabel <- function ( marker.list, marker.list.short, CompInfo="", save.di
                     temp.marker <- marker.list[[q3]][q1]
                     #------------------------------------------------------------- Query match in synonym
                     
-#                     # Concatenate the query preceded by all prefix information as a single string to be passed to SPARQL
-#                     query <- paste ( c ( prefix.info, que.hasProperSynonym ), collapse="\n" )
-#             
-#                     # Prepare marker for query by ensuring the marker is either followed by the  
-#                     # end of the line or it has a symbol other than a letter, a number or a space with 
-#                     # 'a', 'b', 'e' or 's' after it, as that may indicate a different marker.
-#                     temp.marker <- paste ( temp.marker, "$|", temp.marker, "[^0-9a-zA-Z-+/][^ abes]", collapse="", sep = "" )
-#                     query <- gsub ( "\\$marker", temp.marker, query )
-#             
-#                     # Execute query
-#                     res <- SPARQL ( url=endpoint, query )$results
+
                     res <- queryMarker ( marker = temp.marker, query.file = que.hasProperSynonym, prefix.info = prefix.info, CompInfo=CompInfo, endpoint=endpoint, exactMatch=FALSE )
         
                     # Small loop to check if the query is giving multiple label names. In this case the marker will not be changed
