@@ -8,6 +8,15 @@
 \usepackage{cite, hyperref}
 \usepackage{Sweave}
 
+\usepackage[nolist]{acronym}
+\usepackage{url}
+\usepackage{verbatim}
+
+\usepackage{etoolbox}
+\makeatletter
+\preto{\@verbatim}{\topsep=5pt \partopsep=5pt }
+\makeatother
+
 \usepackage{layout}
 \oddsidemargin = 15pt
 \textwidth = 440pt
@@ -106,8 +115,8 @@ Res <- flowCL("CCR7+CD45RA+", VisualSkip = TRUE, ResetArch=FALSE, KeepArch=TRUE)
 
 This can reduce the computational time. If the argument called ``ResetArch'' is set to TRUE, it will first delete the entire archive and start adding data to a new one every time something is queried. Therefore, the code is slower after the archive is reset, however, the code will become faster on average with every query. The argument called ``KeepArch'' allows the user to remove the archive at the end of the simulation if it is set to FALSE. This is useful when the user rather not have files stored on the hard drive. 
 
-\subsection{Perfect-Match with Ontology-Names and Computational Information}
-An example of a perfect match is shown with ``CD3+CD4+CD8-CCR7-CD45RA+''.
+\subsection{Exact-Match with Ontology-Names and Computational Information}
+An example of a exact match is shown with ``CD3+CD4+CD8-CCR7-CD45RA+''.
 
 \begin{small}
 <<label=CCR7+CD45RA+CD8+, fig=TRUE, include=FALSE>>=
@@ -123,7 +132,7 @@ plot(tmp[[1]], nodeAttrs=tmp[[2]], edgeAttrs=tmp[[3]], attrs=tmp[[4]])
 \end{center} \end{figure}
 
 
-The tree diagram in Figure \ref{fig:two} only has one perfect match. The ``OntolNamesTD'' option allows for the marker nodes to display their ontology names in the tree diagrams instead of their short names (ex. ``T cell receptor co-receptor CD8'' is displayed instead of ``CD8''). The default for ``OntolNamesTD'' is FALSE. The ``CompInfo'' option allows the user to view the computational updates while the code is in progress. The default for ``CompInfo'' is FALSE. 
+The tree diagram in Figure \ref{fig:two} only has one exact match. The ``OntolNamesTD'' option allows for the marker nodes to display their ontology names in the tree diagrams instead of their short names (ex. ``T cell receptor co-receptor CD8'' is displayed instead of ``CD8''). The default for ``OntolNamesTD'' is FALSE. The ``CompInfo'' option allows the user to view the computational updates while the code is in progress. The default for ``CompInfo'' is FALSE. 
 
 \subsection{More Examples}
 To show how to use the results from {\it \textbf{flowCL}}, these two examples were chosen.
@@ -145,7 +154,7 @@ Res$Markers$'CD3-CD19-CD20-CD14-HLA-DR-CD16-CD56hi'
     \label{fig:three}
 \end{center} \end{figure}
 
-The ``CD3-CD19-CD20-CD14-HLA-DR-CD16-CD56hi'' returned two cell types called ``CD16-\\negative, CD56-bright natural killer cell'' and ``decidual natural killer cell''. The ranking score for both of these cell types are 0.8750000 and 0.5714286, respectively. These are calculated by adding all the markers that were queried that are also part of the cell type, subtracted by a penalty, all divided by the number of markers that define that cell type. Looking at the bracket form from \$Markers, the ``CD16-negative, CD56-bright natural killer cell'' cell type has a score of (7-0)/8. The ``decidual natural killer cell'' has a score of (6-2)/7. The penalty of -2 is given for every marker in the \{ \} section, being all the markers that were queried that do not define that cell type. A penalty of -4 is given for using the wrong tag on a correct marker. This indicates a completely wrong population and therefore should be penalized substantially. In Figure \ref{fig:three}, neither cell type has a green node. This is because neither have a ranking score of 1. This example has a ``hi'' marker and can be seen as a navy blue node.
+The ``CD3-CD19-CD20-CD14-HLA-DR-CD16-CD56hi'' returned two cell types called ``CD16-\\negative, CD56-bright natural killer cell'' and ``decidual natural killer cell''. The ranking score for both of these cell types are 0.8750000 and 0.5714286, respectively. These are calculated by adding all the markers that were queried that are also part of the cell type, subtracted by a penalty, all divided by the number of markers that define that cell type. Looking at the bracket form from \$Markers, the ``CD16-negative, CD56-bright natural killer cell'' cell type has a score of (7-0)/8. The ``decidual natural killer cell'' has a score of (6-2)/7. The penalty of -2 is given for every marker in the \{ \} section, being all the markers that were queried that do not define that cell type. In Figure \ref{fig:three}, neither cell type has a green node. This is because neither have a ranking score of 1. This example has a ``hi'' marker and can be seen as a navy blue node.
 
 \begin{small}
 <<label=HIPC2, fig=TRUE, include=FALSE>>=
@@ -162,8 +171,7 @@ Res$Markers$'CD3+CD4-CD8+CCR7-CD45RA+'
     \label{fig:four}
 \end{center} \end{figure}
 
-The ``CD3+CD4-CD8+CCR7-CD45RA+'' only returned one cell type called ``effector CD8-\\positive, alpha-beta T cell''. The ranking score for this cell type is 1. Therefore, every marker in the query was used in the definition of the cell type. This is a perfect match. In Figure \ref{fig:four}, however, there is another cell type shown, called ``effector memory CD8-positive, alpha-beta T cell, terminally differentiated''. {\it \textbf{flowCL}} will sometimes add lower ranked results to the tree diagram. This is only to give the user some extra information on possible alternative matches. Notice that in Figure \ref{fig:four} the other cell type has all five markers in its definition. This does not make it a perfect match because {\it lacks plasma membrane part} CD45RO would also need to be required to make ``effector memory CD8-positive, alpha-beta T cell, terminally differentiated'' a perfect match.
-
+The ``CD3+CD4-CD8+CCR7-CD45RA+'' only returned one cell type called ``effector CD8-\\positive, alpha-beta T cell''. The ranking score for this cell type is 1. Therefore, every marker in the query was used in the definition of the cell type. This is a exact match. 
 
 \subsection{Cell Label Example}
 In many cases {\it \textbf{flowCL}} will only be used to extract the best possible cell label given a set of markers. The following code shows an example of this:
@@ -176,12 +184,11 @@ Res$Cell_Label[[x]][[1]]
 @ 
 \end{small}
 
-The user should note that the returned value could be one of many possible best cell labels. To access the other possible best cell labels the ``1'' in $Res\$Cell\_Label[[x]][[1]]$ can be changed to a higher index. Also note that the cell labels with a lower number of marker matches compared to the best match will not be accessible with this method.
-
+The user should note that the returned value could be one of many possible best cell labels. To access the other possible best cell labels the ``1'' in $Res\$Cell\_Label[[x]][[1]]$ can be changed to a higher index. 
 \subsection{Last Comments}
 \begin{itemize}
 \item
-If the user wants all possible HIPC results and all HIPC tree diagrams, then the command of ``flowCL("")'' or ``flowCL("HIPC")'' will achieve this. All the defaults are set to run the HIPC phenotypes and their individual markers. Running the full code with no archive can take up to 40 minutes. 
+If the user wants all possible HIPC results and all HIPC tree diagrams, then the command of ``flowCL(``'')'' or ``flowCL(``HIPC'')'' will achieve this. All the defaults are set to run the HIPC phenotypes and their individual markers. Running the full code with no archive can take up to 20 minutes. 
 \item
 There are two packages that {\it \textbf{flowCL}} depends upon. The first is {\it \textbf{SPARQL}}, which is used when retrieving cell ontology data. The other is {\it \textbf{Rgraphviz}}, which is used when creating the tree diagrams.
 \item

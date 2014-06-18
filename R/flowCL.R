@@ -7,7 +7,6 @@ flowCL <- function ( MarkerList = "HIPC", ExpMrkrLst = NULL, Indices = NULL, Com
 initialTime <- Sys.time ( )
 
 VisualizationSkip <- VisualSkip       # Skips the making of the visualization (tree diagram)
-penalty.skip      <- TRUE             # Skips the penalty calculation (slowest part of the code, and not that important)
 OntolNamesTD      <- OntolNamesTD     # Shows either the common marker name or the ontology marker name in the tree diagram
 
 finalResults <- list ( )
@@ -370,7 +369,7 @@ for ( q in markersToQuery ) {
     fname <- paste ( save.dirResults, 'results_', phenotype, '.csv', sep = "" )
     write.csv ( clean.res, fname, row.names = FALSE )
     if ( CompInfo == TRUE ) { cat( 'Initial query results saved in\n  ', paste("[current directory]/", fname, sep=""), "\n" ) }
-    
+#     return(clean.res)
     # If there were no hits the code will skip to the next iteration instead of 
     # proceeding and getting an error
     if ( nrow ( clean.res ) == 0 ) {
@@ -393,11 +392,17 @@ for ( q in markersToQuery ) {
             # marker not declared in the population/non-typical phenotype)
           
             # Only show the matches with the most hits. If there are only a few that are off by 1 then show them as well.
-            if ( length ( which ( as.integer ( clean.res[,"Number Of Hits"] ) >= ( as.integer ( clean.res[1,"Number Of Hits"] ) - 1 ) ) ) <= 4 ) {
-                cutoff.score <- as.integer ( clean.res[1,"Number Of Hits"] ) - 1
-            } else {
+#             if ( length ( which ( as.integer ( clean.res[,"Number Of Hits"] ) >= ( as.integer ( clean.res[1,"Number Of Hits"] ) - 1 ) ) ) <= 4 ) {
+#                 cutoff.score <- as.integer ( clean.res[1,"Number Of Hits"] ) - 1
+#             } else {
+#                 cutoff.score <- as.integer ( clean.res[1,"Number Of Hits"] )
+#             }
+            if ( length(unlist(marker.list)) <= 2 ) {
                 cutoff.score <- as.integer ( clean.res[1,"Number Of Hits"] )
+            } else {
+                cutoff.score <- as.integer ( clean.res[1,"Number Of Hits"] ) - 1
             }
+            
             #cutoff.score <- getScoreCutoff(scores) #quantile(scores, 0.85) # (Old version of cutoff.score)
         }
     
@@ -411,7 +416,7 @@ for ( q in markersToQuery ) {
             clean.res <- as.matrix ( clean.res )
             clean.res <- t ( clean.res )
         }
-    
+
     #----------------------------------------------------------- Cell Label 
     if ( OnlyOneMarkerSkip == TRUE ) {
 
@@ -473,16 +478,25 @@ for ( q in markersToQuery ) {
         
         # Rank the results
         Ranking <- NULL
+        KeepMarkerNoDouble <- rep(TRUE, length(MarkerGroups))
         for ( r1 in 1 : length(MarkerGroups)){ # remove + - hi lo
             tmp1 <- MarkerGroups[[r1]][[1]]
             tmp1 <- gsub("[+]$",  "", tmp1); tmp1 <- gsub("-$",  "", tmp1); tmp1 <- gsub("hi$", "", tmp1);   tmp1 <- gsub("lo$", "", tmp1)
             tmp2 <- MarkerGroups[[r1]][[3]]
             tmp2 <- gsub("[+]$",  "", tmp2); tmp2 <- gsub("-$",  "", tmp2); tmp2 <- gsub("hi$", "", tmp2);   tmp2 <- gsub("lo$", "", tmp2)
-            
+
+            tmp3 <- MarkerGroups[[r1]][[1]]
+            tmp3 <- gsub("hi$", "+", tmp3);   tmp3 <- gsub("lo$", "+", tmp3)
+            tmp4 <- MarkerGroups[[r1]][[3]]
+            tmp4 <- gsub("hi$", "+", tmp4);   tmp4 <- gsub("lo$", "+", tmp4)
+
             DoubleMisUseMarker <- 0 # Calculates number of markers that were queried and matched but were queried with the wrong tag
             for ( w1 in 1 : length(tmp2) ) {
-                if( length(which (tmp1 == tmp2[w1]) >= 1 ) ) {
-                    DoubleMisUseMarker <- DoubleMisUseMarker + 1
+                if( length(which (tmp1 == tmp2[w1])) >= 1 ) { # equal without tag
+                    if( length(which (tmp3 == tmp4[w1])) == 0){ # not equal with tag
+                        DoubleMisUseMarker <- DoubleMisUseMarker + 1
+                        KeepMarkerNoDouble[r1] <- FALSE
+                    }
                 }
             }
             PenaltiesOfMarkers <- length(MarkerGroups[[r1]][[1]]) # Calculates number of markers that were queried that are not part of the definition of the cell type
@@ -501,14 +515,21 @@ for ( q in markersToQuery ) {
         #----------------------------------------------------------- Reorder Results
         
         SortOrder <- sort(finalResults[["Ranking"]][[listPhenotypes[q]]], decreasing=TRUE, index.return = TRUE )$ix
+        
+        tmpTrue <- which(KeepMarkerNoDouble == FALSE)
+        if ( length(tmpTrue) >= 1 ) {
+            for ( m1 in 1 : length(tmpTrue) ) {
+                SortOrder <- SortOrder[-which ( SortOrder == tmpTrue[m1])]
+            }
+        }
+        
         # Remembers if we need to add a "+ more" comment provided that we removed at least one cell type
         AddPlusMore <- FALSE
         if ( length(SortOrder) > MaxHitsPht ) {
             AddPlusMore <- TRUE # track if "+ more" needs to be added
+            SortOrder <- SortOrder[1:MaxHitsPht] # only takes the top MaxHitsPht amount
         }
-        if ( length(SortOrder) > MaxHitsPht){ # only takes the top MaxHitsPht amount
-            SortOrder <- SortOrder[1:MaxHitsPht]
-        }
+
         finalResults[["Ranking"]][[listPhenotypes[q]]]        <- finalResults[["Ranking"]][[listPhenotypes[q]]][SortOrder]
         finalResults[["Markers"]][[listPhenotypes[q]]]        <- finalResults[["Markers"]][[listPhenotypes[q]]][SortOrder]
         finalResults[["Marker_Groups"]][[listPhenotypes[q]]]  <- finalResults[["Marker_Groups"]][[listPhenotypes[q]]][SortOrder]
@@ -522,27 +543,28 @@ for ( q in markersToQuery ) {
             finalResults[["Cell_Labels"]][[listPhenotypes[q]]]     <- finalResults[["Cell_Labels"]][[listPhenotypes[q]]][PerfectIndices]
             AddPlusMore <- FALSE            
         }
-        # create clean.res2 for updateLists
+
+        # change clean.res for updateLists
         indicesSort <- c()
         for ( g1 in 1 : length(finalResults[["Cell_Labels"]][[listPhenotypes[q]]]) ){
             indicesSort <- c(indicesSort, which(finalResults[["Cell_Labels"]][[listPhenotypes[q]]][g1] == clean.res[,"celllabel"]) )
         }
         if ( length(indicesSort == 1)  && nrow(clean.res) == 1 ) {
-            clean.res2 <- clean.res
+            clean.res <- clean.res
         } else {
             if (length(indicesSort) == 1 ) {
-                clean.res2 <- t(as.matrix(clean.res[indicesSort,]))
+                clean.res <- t(as.matrix(clean.res[indicesSort,]))
             } else {
-                clean.res2 <- clean.res[indicesSort,]
+                clean.res <- clean.res[indicesSort,]
             }
         }
         # Compile the new row of the .csv file by updating all the list functions. This is the second time. listPhenotypes.csv uses these second case.
-        r2 <- updateLists ( clean.res2, MaxHitsPht, AddPlusMore)
+        r2 <- updateLists ( clean.res, MaxHitsPht, AddPlusMore)
         listMarkerLabels[[q]] <- r2[1] ; listCellLabels[[q]] <- r2[2]
         listPhenotypeID[[q]]  <- r2[3] ; listCellID[[q]]     <- r2[4]
         
-        listMarkers[q] <- cleanMarkersList(finalResults[["Markers"]][[listPhenotypes[q]]])
-        listRanking[q] <- cleanRankingList(finalResults[["Ranking"]][[listPhenotypes[q]]])
+        listMarkers[q] <- cleanMarkersList(finalResults[["Markers"]][[listPhenotypes[q]]], AddPlusMore)
+        listRanking[q] <- cleanRankingList(finalResults[["Ranking"]][[listPhenotypes[q]]], AddPlusMore)
         
         
     }
@@ -551,7 +573,7 @@ for ( q in markersToQuery ) {
     # Added in to make the code faster when the user only wants to know if the markers 
     # are in the ontology or not and does not want the tree diagrams
     if ( VisualizationSkip == FALSE && OnlyOneMarkerSkip == FALSE) {
-        
+
         # Identify all parents of the matches.
         parent.res <- matrix ( nrow = 0, ncol = 5 )
         colnames ( parent.res ) <- c ( "x", "celllabel", "parent", "parentlabel", "score" )

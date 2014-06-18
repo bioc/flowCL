@@ -43,25 +43,33 @@ changeHLADR <- function ( marker.list ) {
 
 #################################################################################
 # Prepares the marker list to be put into listPhenotype and $Table
-cleanMarkersList <- function ( temp ) {
+cleanMarkersList <- function ( temp, AddPlusMore ) {
     
     fullname <- c()
     for ( y1 in 1: length(temp)){
         fullname <- paste(fullname , y1, ") ", temp[y1] , "\n", sep="")
     }
-    fullname <- substr ( fullname, 1, nchar ( fullname ) - 1 )
+    if ( AddPlusMore == FALSE ) {
+        fullname <- substr ( fullname, 1, nchar ( fullname ) - 1 )
+    } else {
+        fullname <- paste ( fullname,  " + more", sep="" )
+    }
     return ( fullname )
 }
 
 #################################################################################
 # Prepares the ranking list to be put into listPhenotype and $Table
-cleanRankingList <- function ( temp ) {
+cleanRankingList <- function ( temp, AddPlusMore ) {
     
     fullname <- c()
     for ( y1 in 1: length(temp)){
         fullname <- paste(fullname , y1, ") ", round(temp[y1], digits = 3) , "\n", sep="")
     }
-    fullname <- substr ( fullname, 1, nchar ( fullname ) - 1 )
+    if ( AddPlusMore == FALSE ) {
+        fullname <- substr ( fullname, 1, nchar ( fullname ) - 1 )
+    } else {
+        fullname <- paste ( fullname,  " + more", sep="" )
+    }
     return ( fullname )
 }
 
