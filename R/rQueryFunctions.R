@@ -221,6 +221,7 @@ queryMarker <- function ( marker = NULL, query.file = "getMatchingSynonyms.txt",
     }
     # Execute query  
     res <- SPARQL ( url = endpoint, query )$results
+
     return ( res )
 }
 

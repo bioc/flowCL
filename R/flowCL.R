@@ -16,20 +16,24 @@ listPhenotypes_flowCL <- listPhenotypes_flowCL()
 listColours_flowCL    <- listColours_flowCL()
 
 # Load querying data from supportingFunctions. 
-prefix.info                     <- flowCL_query_data_prefix.info()
-que.getParentClasses            <- flowCL_query_data_getParentClasses()
-que.hasPlasmaMembranePart       <- flowCL_query_data_hasPlasmaMembranePart()
-que.hasProperLabel              <- flowCL_query_data_hasProperLabel()
-que.hasPMPsingle                <- flowCL_query_data_hasPMPsingle()
-que.hasProperSynonym            <- flowCL_query_data_hasProperSynonym()
-que.lacksPMPsingle              <- flowCL_query_data_lacksPMPsingle()
-que.lacksPlasmaMembranePart     <- flowCL_query_data_lacksPlasmaMembranePart()
-que.hasLowPlasmaMembraneAmount  <- flowCL_query_data_hasLowPlasmaMembraneAmount()
-que.hasHighPlasmaMembraneAmount <- flowCL_query_data_hasHighPlasmaMembraneAmount()
-que.celllabel_lacksPMP          <- flowCL_query_data_celllabel_lacksPMP()
-que.celllabel_hasPMP            <- flowCL_query_data_celllabel_hasPMP()
-que.celllabel_lowPMA            <- flowCL_query_data_celllabel_lowPMA()
-que.celllabel_highPMA           <- flowCL_query_data_celllabel_highPMA()
+prefix.info                           <- flowCL_query_data_prefix.info()
+que.getParentClasses                  <- flowCL_query_data_getParentClasses()
+que.hasPlasmaMembranePart             <- flowCL_query_data_hasPlasmaMembranePart()
+que.hasProperLabel                    <- flowCL_query_data_hasProperLabel()
+que.hasPMPsingle                      <- flowCL_query_data_hasPMPsingle()
+que.hasProperSynonym                  <- flowCL_query_data_hasProperSynonym()
+que.lacksPMPsingle                    <- flowCL_query_data_lacksPMPsingle()
+que.lacksPlasmaMembranePart           <- flowCL_query_data_lacksPlasmaMembranePart()
+que.hasLowPlasmaMembraneAmount        <- flowCL_query_data_hasLowPlasmaMembraneAmount()
+que.hasHighPlasmaMembraneAmount       <- flowCL_query_data_hasHighPlasmaMembraneAmount()
+que.celllabel_lacksPMP                <- flowCL_query_data_celllabel_lacksPMP()
+que.celllabel_hasPMP                  <- flowCL_query_data_celllabel_hasPMP()
+que.celllabel_lowPMA                  <- flowCL_query_data_celllabel_lowPMA()
+que.celllabel_highPMA                 <- flowCL_query_data_celllabel_highPMA()
+que.hasPlasmaMembranePartDirect       <- flowCL_query_data_hasPlasmaMembranePartDirect()
+que.lacksPlasmaMembranePartDirect     <- flowCL_query_data_lacksPlasmaMembranePartDirect()
+que.hasLowPlasmaMembraneAmountDirect  <- flowCL_query_data_hasLowPlasmaMembraneAmountDirect()
+que.hasHighPlasmaMembraneAmountDirect <- flowCL_query_data_hasHighPlasmaMembraneAmountDirect()
 
 # Function to test if the user has input cd in non-capitals. If so, the code will terminate.
 if ( cdTest ( MarkerList ) == TRUE)
@@ -39,7 +43,6 @@ if ( cdTest ( MarkerList ) == TRUE)
 endpoint <- "http://cell.ctde.net:8080/openrdf-sesame/repositories/CL"
 
 # Check date of Ontology update
-# if ( MarkerList == "Date"||MarkerList == "date"||MarkerList == "DATE" ) {
 if ( length(MarkerList) == 1 ) {
     if ( tolower(MarkerList) == "date") {
         que.getDate <- flowCL_query_date()    
@@ -93,7 +96,7 @@ if ( is.null ( Indices ) ) {
 
 # Send a warning that ExpMrkrLst was not defined.
 if ( is.null ( ExpMrkrLst ) ) {
-    message("ExpMrkrLst was not defined. Defining ExpMrkrLst as MarkerList.")
+    cat("ExpMrkrLst was not defined. Defining ExpMrkrLst as MarkerList.\n")
     listExpPhenotypes <- listPhenotypes # updated MarkerList
 } else {
     # If the user used a different number of phenotypes as experimental phenotypes then a warning is shown.
@@ -110,7 +113,6 @@ if ( is.null ( ExpMrkrLst ) ) {
 }
 
 # Preallocate lists.
-
 listPhenotypeUpdate  <- listPhenotypeOriginal <- listPhenotypeID <- listCellID   <- listMarkers <- listRanking <- listPhenotypes
 listPhenotypesuccess <- listMarkerLabels      <- listCellLabels  <- listFullMrkr <- listExpPhenotypeUpdate     <- listPhenotypes
 
@@ -193,9 +195,9 @@ for ( q in markersToQuery ) {
     if ( is.null ( marker.list ) ) {
         return ()    
     }
-    OnlyOneMarkerSkip <- FALSE
-    if ( length( unlist( marker.list)) == 1) {
-        OnlyOneMarkerSkip <- TRUE
+    OnlyOneMarker <- FALSE
+    if ( length( unlist( marker.list)) == 1 ) {
+        OnlyOneMarker <- TRUE
     }
     # Change the . in HLA.DR to a - since the + and - signs are reserved for splitting the string.
     marker.list <- changeHLADR ( marker.list )
@@ -320,28 +322,28 @@ for ( q in markersToQuery ) {
                 # Get relevant information about the marker - the population names which
                 # have "plasma membrane part" of this marker.
                 fname <- paste ( save.dirResults, 'results_', marker.list.short[[q3]][which(marker.list[[q3]]==m)], '.csv', sep = "" )
+                QueryFile <- list(que.hasPlasmaMembranePart,       que.lacksPlasmaMembranePart,       que.hasHighPlasmaMembraneAmount,       que.hasLowPlasmaMembraneAmount,
+                                  que.hasPlasmaMembranePartDirect, que.lacksPlasmaMembranePartDirect, que.hasHighPlasmaMembraneAmountDirect, que.hasLowPlasmaMembraneAmountDirect)
                 if ( file.exists ( fname ) ) {
                     cur.res <- read.csv ( fname, as.is=TRUE )
                     cur.res <- cur.res[ - c ( ( ncol ( cur.res ) - 2 ) : ncol ( cur.res ) ) ] 
                 } else {
-                    if ( q3 == 1 ) { cur.res <- queryMarker ( marker = m, query.file = que.hasPlasmaMembranePart,       prefix.info = prefix.info, CompInfo=CompInfo, endpoint=endpoint, exactMatch=TRUE ) }
-                    if ( q3 == 2 ) { cur.res <- queryMarker ( marker = m, query.file = que.lacksPlasmaMembranePart,     prefix.info = prefix.info, CompInfo=CompInfo, endpoint=endpoint, exactMatch=TRUE ) }
-                    if ( q3 == 3 ) { cur.res <- queryMarker ( marker = m, query.file = que.hasHighPlasmaMembraneAmount, prefix.info = prefix.info, CompInfo=CompInfo, endpoint=endpoint, exactMatch=TRUE ) }
-                    if ( q3 == 4 ) { cur.res <- queryMarker ( marker = m, query.file = que.hasLowPlasmaMembraneAmount,  prefix.info = prefix.info, CompInfo=CompInfo, endpoint=endpoint, exactMatch=TRUE ) }
+                    if ( q3 == 1 ) { cur.res <- queryMarker ( marker = m, query.file = QueryFile[[q3 + 4*(OnlyOneMarker)]], prefix.info = prefix.info, CompInfo=CompInfo, endpoint=endpoint, exactMatch=TRUE ) }
+                    if ( q3 == 2 ) { cur.res <- queryMarker ( marker = m, query.file = QueryFile[[q3 + 4*(OnlyOneMarker)]], prefix.info = prefix.info, CompInfo=CompInfo, endpoint=endpoint, exactMatch=TRUE ) }
+                    if ( q3 == 3 ) { cur.res <- queryMarker ( marker = m, query.file = QueryFile[[q3 + 4*(OnlyOneMarker)]], prefix.info = prefix.info, CompInfo=CompInfo, endpoint=endpoint, exactMatch=TRUE ) }
+                    if ( q3 == 4 ) { cur.res <- queryMarker ( marker = m, query.file = QueryFile[[q3 + 4*(OnlyOneMarker)]], prefix.info = prefix.info, CompInfo=CompInfo, endpoint=endpoint, exactMatch=TRUE ) }
                 }
                 if ( nrow ( cur.res ) == 0 ) {
                     if ( CompInfo == TRUE ) {
-                    if ( q3 == 1 ) {cat( "No cell populations found which have plasma membrane part", m, "!\n" )}
-                    if ( q3 == 2 ) {cat( "No cell populations found which lack plasma membrane part", m, "!\n" )}
-                    if ( q3 == 3 ) {cat( "No cell populations found which have high plasma membrane amount", m, "!\n" )}
-                    if ( q3 == 4 ) {cat( "No cell populations found which have low plasma membrane amount", m, "!\n" )}
+                    if ( q3 == 1 ) {message( "No cell populations found which have plasma membrane part ", m, "!" )}
+                    if ( q3 == 2 ) {message( "No cell populations found which lack plasma membrane part ", m, "!" )}
+                    if ( q3 == 3 ) {message( "No cell populations found which have high plasma membrane amount ", m, "!" )}
+                    if ( q3 == 4 ) {message( "No cell populations found which have low plasma membrane amount ", m, "!" )}
                     }
        
                 }
           
                 penalties <- rep ( 0, nrow ( cur.res ) )
-
-        #         } # end of penalty skip if statement.
                 
                 cur.res <- cbind ( cur.res, penalties )
                 temp.clean.res <- tabulateResults ( cur.res )
@@ -379,200 +381,181 @@ for ( q in markersToQuery ) {
         }  
         next
     }
+    
     #----------------------------------------------------------- Refine clean.res 
-    
-            # Refine list of parents by focusing on highest scores:
-        scores <- as.numeric ( as.character ( clean.res[ , "Score"] ) )
+    # Refine list of parents by focusing on highest scores:
+    scores <- as.numeric ( as.character ( clean.res[ , "Score"] ) )
 
-        # If at least 3 perfect scores are found, only report them:
-        if ( length ( which ( scores == length ( unlist ( marker.list ) ) ) ) >= 3 ) {
-            cutoff.score <- length ( unlist ( marker.list ) )
+    # If at least 3 perfect scores are found, only report them:
+    if ( length ( which ( scores == length ( unlist ( marker.list ) ) ) ) >= 3 ) {
+        cutoff.score <- length ( unlist ( marker.list ) )
+    } else {
+        # Typically there will be less than perfect scores (due to marker missing/
+        # marker not declared in the population/non-typical phenotype)
+      
+        # Only show the matches with the most hits. If there are only a few that are off by 1 then show them as well.
+        if ( length(unlist(marker.list)) <= 2 ) {
+            cutoff.score <- as.integer ( clean.res[1,"Number Of Hits"] )
         } else {
-            # Typically there will be less than perfect scores (due to marker missing/
-            # marker not declared in the population/non-typical phenotype)
-          
-            # Only show the matches with the most hits. If there are only a few that are off by 1 then show them as well.
-#             if ( length ( which ( as.integer ( clean.res[,"Number Of Hits"] ) >= ( as.integer ( clean.res[1,"Number Of Hits"] ) - 1 ) ) ) <= 4 ) {
-#                 cutoff.score <- as.integer ( clean.res[1,"Number Of Hits"] ) - 1
-#             } else {
-#                 cutoff.score <- as.integer ( clean.res[1,"Number Of Hits"] )
-#             }
-            if ( length(unlist(marker.list)) <= 2 ) {
-                cutoff.score <- as.integer ( clean.res[1,"Number Of Hits"] )
-            } else {
-                cutoff.score <- as.integer ( clean.res[1,"Number Of Hits"] ) - 1
-            }
-            
-            #cutoff.score <- getScoreCutoff(scores) #quantile(scores, 0.85) # (Old version of cutoff.score)
+            cutoff.score <- as.integer ( clean.res[1,"Number Of Hits"] ) - 1
         }
+    }
+
+    if ( CompInfo == TRUE ) { cat ( "Using a cutoff score of", cutoff.score, "\n" ) }
+
+    # Extract highly scored parents only:
+    clean.res <- clean.res[which ( scores >= cutoff.score ), ]
     
-        if ( CompInfo == TRUE ) { cat ( "Using a cutoff score of", cutoff.score, "\n" ) }
-    
-        # Extract highly scored parents only:
-        clean.res <- clean.res[which ( scores >= cutoff.score ), ]
-        
-        # Fixes small bug when there is only one result
-        if ( length ( which ( scores >= cutoff.score ) ) == 1 ) {
-            clean.res <- as.matrix ( clean.res )
-            clean.res <- t ( clean.res )
-        }
+    # Fixes small bug when there is only one result
+    if ( length ( which ( scores >= cutoff.score ) ) == 1 ) {
+        clean.res <- as.matrix ( clean.res )
+        clean.res <- t ( clean.res )
+    }
 
     #----------------------------------------------------------- Cell Label 
-    if ( OnlyOneMarkerSkip == TRUE ) {
-
-        # Compile the new row of the .csv file by updating all the list functions. 
-        r <- updateLists ( clean.res=clean.res, MaxHitsPht, FALSE)
-        listMarkerLabels[[q]] <- r[1] ; listCellLabels[[q]] <- r[2]
-        listPhenotypeID[[q]]  <- r[3] ; listCellID[[q]]     <- r[4]
-    }
+    # Compile the new row of the .csv file by updating all the list functions. 
+    r <- updateLists ( clean.res=clean.res, length( which ( clean.res[ ,'Number Of Hits'] >= ( max ( as.numeric ( clean.res[ ,'Number Of Hits'] ) ) - 1 ) )), FALSE)
+    listMarkerLabels[[q]] <- r[1] ; listCellLabels[[q]] <- r[2]
+    listPhenotypeID[[q]]  <- r[3] ; listCellID[[q]]     <- r[4]
     
-    if ( OnlyOneMarkerSkip == FALSE ) {
-    
-        # Compile the new row of the .csv file by updating all the list functions. 
-        r <- updateLists ( clean.res=clean.res, length( which ( clean.res[ ,'Number Of Hits'] >= ( max ( as.numeric ( clean.res[ ,'Number Of Hits'] ) ) - 1 ) )), FALSE)
-        listMarkerLabels[[q]] <- r[1] ; listCellLabels[[q]] <- r[2]
-        listPhenotypeID[[q]]  <- r[3] ; listCellID[[q]]     <- r[4]
-        
-        temp.celllabel <- listCellLabels[[q]]
-        temp.celllabel <- gsub ( "\n [+] more", "", temp.celllabel )
-        temp.string <- list()
-        temp.index <- gregexpr ( ")",  temp.celllabel )
-        # Extract cell labels from text
-        if ( ( temp.index[[1]][1] != - 1 ) ) {
-            for ( q7 in 1:length ( temp.index[[1]] ) ) {
-                if ( q7 < length ( temp.index[[1]] ) ) { 
-                    if (q7 <= 8 )            {temp.string[q7] <- paste (substr ( temp.celllabel, temp.index[[1]][q7] + 2, temp.index[[1]][q7+1] - 3 ), sep = "" )}
-                    if (q7 >= 9 && q7 <= 98) {temp.string[q7] <- paste (substr ( temp.celllabel, temp.index[[1]][q7] + 2, temp.index[[1]][q7+1] - 4 ), sep = "" )}
-                    if (q7 >= 99 )           {temp.string[q7] <- paste (substr ( temp.celllabel, temp.index[[1]][q7] + 2, temp.index[[1]][q7+1] - 5 ), sep = "" )}
-                }
-                if ( q7 == length ( temp.index[[1]] ) ) { 
-                    temp.string[q7] <- paste (substr ( temp.celllabel, temp.index[[1]][q7] + 2, nchar(temp.celllabel)), sep = "" )
-                }      
+    temp.celllabel <- listCellLabels[[q]]
+    temp.celllabel <- gsub ( "\n [+] more", "", temp.celllabel )
+    temp.string <- list()
+    temp.index <- gregexpr ( ")",  temp.celllabel )
+    # Extract cell labels from text
+    if ( ( temp.index[[1]][1] != - 1 ) ) {
+        for ( q7 in 1:length ( temp.index[[1]] ) ) {
+            if ( q7 < length ( temp.index[[1]] ) ) { 
+                if (q7 <= 8 )            {temp.string[q7] <- paste (substr ( temp.celllabel, temp.index[[1]][q7] + 2, temp.index[[1]][q7+1] - 3 ), sep = "" )}
+                if (q7 >= 9 && q7 <= 98) {temp.string[q7] <- paste (substr ( temp.celllabel, temp.index[[1]][q7] + 2, temp.index[[1]][q7+1] - 4 ), sep = "" )}
+                if (q7 >= 99 )           {temp.string[q7] <- paste (substr ( temp.celllabel, temp.index[[1]][q7] + 2, temp.index[[1]][q7+1] - 5 ), sep = "" )}
             }
+            if ( q7 == length ( temp.index[[1]] ) ) { 
+                temp.string[q7] <- paste (substr ( temp.celllabel, temp.index[[1]][q7] + 2, nchar(temp.celllabel)), sep = "" )
+            }      
         }
-        # Store cell labels to return to the user
-        finalResults[["Cell_Labels"]][[listPhenotypes[q]]] <- temp.string
+    }
+    # Store cell labels to return to the user
+    finalResults[["Cell_Labels"]][[listPhenotypes[q]]] <- temp.string
 
-        #----------------------------------------------------------- Marker_Groups and Markers
+    #----------------------------------------------------------- Marker_Groups and Markers
 
-        postfix <- c("_lacksPMP.csv", "_hasPMP.csv", "_lowPMA.csv", "_highPMA.csv")
-        query.file.list <- list(que.celllabel_lacksPMP, que.celllabel_hasPMP, que.celllabel_lowPMA, que.celllabel_highPMA)
-        query.dir.list  <- c(save.dirlacksPMP, save.dirhasPMP, save.dirlowPMA, save.dirhighPMA)
-        
-        # Organize which markers are required, which are extra, which are in the experiment and not used, 
-        # and which additional ones would be required to get a perfect match.
-        MarkerGroups    <- MarkerGroupsFunc(temp.string=temp.string, query.dir.list=query.dir.list, postfix=postfix, save.dir=save.dir, 
-                                            query.file.list=query.file.list, prefix.info=prefix.info, CompInfo=CompInfo, marker.list.short=marker.list.short,
-                                            exp.marker.list.short=exp.marker.list.short, AllMarkerGroups=FALSE, endpoint=endpoint)
+    postfix <- c("_lacksPMP.csv", "_hasPMP.csv", "_lowPMA.csv", "_highPMA.csv")
+    query.file.list <- list(que.celllabel_lacksPMP, que.celllabel_hasPMP, que.celllabel_lowPMA, que.celllabel_highPMA)
+    query.dir.list  <- c(save.dirlacksPMP, save.dirhasPMP, save.dirlowPMA, save.dirhighPMA)
+    
+    # Organize which markers are required, which are extra, which are in the experiment and not used, 
+    # and which additional ones would be required to get a perfect match.
+    MarkerGroups    <- MarkerGroupsFunc(temp.string=temp.string, query.dir.list=query.dir.list, postfix=postfix, save.dir=save.dir, 
+                                        query.file.list=query.file.list, prefix.info=prefix.info, CompInfo=CompInfo, marker.list.short=marker.list.short,
+                                        exp.marker.list.short=exp.marker.list.short, AllMarkerGroups=FALSE, endpoint=endpoint)
 
-        finalResults[["Marker_Groups"]][[listPhenotypes[q]]] <- MarkerGroups # List form
-        # Display in a bracket form
-        temp.list <- list()
-        for ( q5 in 1 : length ( MarkerGroups ) ) {
+    finalResults[["Marker_Groups"]][[listPhenotypes[q]]] <- MarkerGroups # List form
+    # Display in a bracket form
+    temp.list <- list()
+    for ( q5 in 1 : length ( MarkerGroups ) ) {
         temp.list[[q5]] <- paste ( "{", paste(MarkerGroups[[q5]][[1]], collapse=", "), "}",
                                         paste(MarkerGroups[[q5]][[2]], collapse=", "),
                                    "(", paste(MarkerGroups[[q5]][[3]], collapse=", "), ")",
                                    "[", paste(MarkerGroups[[q5]][[4]], collapse=", "), "]")
         finalResults[["Markers"]][[listPhenotypes[q]]] <- temp.list # Bracket form
-        }
-        
-        # Rank the results
-        Ranking <- NULL
-        KeepMarkerNoDouble <- rep(TRUE, length(MarkerGroups))
-        for ( r1 in 1 : length(MarkerGroups)){ # remove + - hi lo
-            tmp1 <- MarkerGroups[[r1]][[1]]
-            tmp1 <- gsub("[+]$",  "", tmp1); tmp1 <- gsub("-$",  "", tmp1); tmp1 <- gsub("hi$", "", tmp1);   tmp1 <- gsub("lo$", "", tmp1)
-            tmp2 <- MarkerGroups[[r1]][[3]]
-            tmp2 <- gsub("[+]$",  "", tmp2); tmp2 <- gsub("-$",  "", tmp2); tmp2 <- gsub("hi$", "", tmp2);   tmp2 <- gsub("lo$", "", tmp2)
+    }
+    
+    # Rank the results
+    Ranking <- NULL
+    KeepMarkerNoDouble <- rep(TRUE, length(MarkerGroups))
+    for ( r1 in 1 : length(MarkerGroups)){ # remove + - hi lo
+        tmp1 <- MarkerGroups[[r1]][[1]]
+        tmp1 <- gsub("[+]$",  "", tmp1); tmp1 <- gsub("-$",  "", tmp1); tmp1 <- gsub("hi$", "", tmp1);   tmp1 <- gsub("lo$", "", tmp1)
+        tmp2 <- MarkerGroups[[r1]][[3]]
+        tmp2 <- gsub("[+]$",  "", tmp2); tmp2 <- gsub("-$",  "", tmp2); tmp2 <- gsub("hi$", "", tmp2);   tmp2 <- gsub("lo$", "", tmp2)
 
-            tmp3 <- MarkerGroups[[r1]][[1]]
-            tmp3 <- gsub("hi$", "+", tmp3);   tmp3 <- gsub("lo$", "+", tmp3)
-            tmp4 <- MarkerGroups[[r1]][[3]]
-            tmp4 <- gsub("hi$", "+", tmp4);   tmp4 <- gsub("lo$", "+", tmp4)
+        tmp3 <- MarkerGroups[[r1]][[1]]
+        tmp3 <- gsub("hi$", "+", tmp3);   tmp3 <- gsub("lo$", "+", tmp3)
+        tmp4 <- MarkerGroups[[r1]][[3]]
+        tmp4 <- gsub("hi$", "+", tmp4);   tmp4 <- gsub("lo$", "+", tmp4)
 
-            DoubleMisUseMarker <- 0 # Calculates number of markers that were queried and matched but were queried with the wrong tag
-            for ( w1 in 1 : length(tmp2) ) {
-                if( length(which (tmp1 == tmp2[w1])) >= 1 ) { # equal without tag
-                    if( length(which (tmp3 == tmp4[w1])) == 0){ # not equal with tag
-                        DoubleMisUseMarker <- DoubleMisUseMarker + 1
-                        KeepMarkerNoDouble[r1] <- FALSE
-                    }
+        DoubleMisUseMarker <- 0 # Calculates number of markers that were queried and matched but were queried with the wrong tag
+        for ( w1 in 1 : length(tmp2) ) {
+            if( length(which (tmp1 == tmp2[w1])) >= 1 ) { # equal without tag
+                if( length(which (tmp3 == tmp4[w1])) == 0){ # not equal with tag
+                    DoubleMisUseMarker <- DoubleMisUseMarker + 1
+                    KeepMarkerNoDouble[r1] <- FALSE
                 }
             }
-            PenaltiesOfMarkers <- length(MarkerGroups[[r1]][[1]]) # Calculates number of markers that were queried that are not part of the definition of the cell type
-            TotalNumberOfMarkers <- length(MarkerGroups[[r1]][[2]]) + length(MarkerGroups[[r1]][[3]]) + length(MarkerGroups[[r1]][[4]]) # Number of markers to define the cell type
-            # Scoring system: [ +1 for each hit - (4 * markers that were required but were given the wrong tag) - 2 * markers that were queried that were not required ] / all required to define the cell type
-            Ranking[r1] <-  (length(MarkerGroups[[r1]][[2]]) - 4*DoubleMisUseMarker- 2*(PenaltiesOfMarkers - DoubleMisUseMarker)) / (TotalNumberOfMarkers)    
         }
-        
-        if ( is.null(finalResults[["Ranking"]][[listPhenotypes[q]]]) && length(Ranking) == 1) { # fixes bug where only one numeric in the first slot would create a list of single numerics
-            finalResults[["Ranking"]][[listPhenotypes[q]]] <- as.list(Ranking)
-            finalResults[["Ranking"]][[listPhenotypes[q]]] <- finalResults[["Ranking"]][[listPhenotypes[q]]][[1]] # sloppy trick to set list up correctly
-        } else {
-            finalResults[["Ranking"]][[listPhenotypes[q]]] <- Ranking
-        }
-        
-        #----------------------------------------------------------- Reorder Results
-        
-        SortOrder <- sort(finalResults[["Ranking"]][[listPhenotypes[q]]], decreasing=TRUE, index.return = TRUE )$ix
-        
-        tmpTrue <- which(KeepMarkerNoDouble == FALSE)
-        if ( length(tmpTrue) >= 1 ) {
-            for ( m1 in 1 : length(tmpTrue) ) {
-                SortOrder <- SortOrder[-which ( SortOrder == tmpTrue[m1])]
-            }
-        }
-        
-        # Remembers if we need to add a "+ more" comment provided that we removed at least one cell type
-        AddPlusMore <- FALSE
-        if ( length(SortOrder) > MaxHitsPht ) {
-            AddPlusMore <- TRUE # track if "+ more" needs to be added
-            SortOrder <- SortOrder[1:MaxHitsPht] # only takes the top MaxHitsPht amount
-        }
-
-        finalResults[["Ranking"]][[listPhenotypes[q]]]        <- finalResults[["Ranking"]][[listPhenotypes[q]]][SortOrder]
-        finalResults[["Markers"]][[listPhenotypes[q]]]        <- finalResults[["Markers"]][[listPhenotypes[q]]][SortOrder]
-        finalResults[["Marker_Groups"]][[listPhenotypes[q]]]  <- finalResults[["Marker_Groups"]][[listPhenotypes[q]]][SortOrder]
-        finalResults[["Cell_Labels"]][[listPhenotypes[q]]]     <- finalResults[["Cell_Labels"]][[listPhenotypes[q]]][SortOrder]
-                
-        if ( length(which(finalResults[["Ranking"]][[listPhenotypes[q]]] == 1 )) >= 1 ) {
-            PerfectIndices <- which(finalResults[["Ranking"]][[listPhenotypes[q]]] == 1 ) #If perfet score, then only return that one.
-            finalResults[["Ranking"]][[listPhenotypes[q]]]        <- finalResults[["Ranking"]][[listPhenotypes[q]]][PerfectIndices]
-            finalResults[["Markers"]][[listPhenotypes[q]]]        <- finalResults[["Markers"]][[listPhenotypes[q]]][PerfectIndices]
-            finalResults[["Marker_Groups"]][[listPhenotypes[q]]]  <- finalResults[["Marker_Groups"]][[listPhenotypes[q]]][PerfectIndices]
-            finalResults[["Cell_Labels"]][[listPhenotypes[q]]]     <- finalResults[["Cell_Labels"]][[listPhenotypes[q]]][PerfectIndices]
-            AddPlusMore <- FALSE            
-        }
-
-        # change clean.res for updateLists
-        indicesSort <- c()
-        for ( g1 in 1 : length(finalResults[["Cell_Labels"]][[listPhenotypes[q]]]) ){
-            indicesSort <- c(indicesSort, which(finalResults[["Cell_Labels"]][[listPhenotypes[q]]][g1] == clean.res[,"celllabel"]) )
-        }
-        if ( length(indicesSort == 1)  && nrow(clean.res) == 1 ) {
-            clean.res <- clean.res
-        } else {
-            if (length(indicesSort) == 1 ) {
-                clean.res <- t(as.matrix(clean.res[indicesSort,]))
-            } else {
-                clean.res <- clean.res[indicesSort,]
-            }
-        }
-        # Compile the new row of the .csv file by updating all the list functions. This is the second time. listPhenotypes.csv uses these second case.
-        r2 <- updateLists ( clean.res, MaxHitsPht, AddPlusMore)
-        listMarkerLabels[[q]] <- r2[1] ; listCellLabels[[q]] <- r2[2]
-        listPhenotypeID[[q]]  <- r2[3] ; listCellID[[q]]     <- r2[4]
-        
-        listMarkers[q] <- cleanMarkersList(finalResults[["Markers"]][[listPhenotypes[q]]], AddPlusMore)
-        listRanking[q] <- cleanRankingList(finalResults[["Ranking"]][[listPhenotypes[q]]], AddPlusMore)
-        
-        
+        PenaltiesOfMarkers <- length(MarkerGroups[[r1]][[1]]) # Calculates number of markers that were queried that are not part of the definition of the cell type
+        TotalNumberOfMarkers <- length(MarkerGroups[[r1]][[2]]) + length(MarkerGroups[[r1]][[3]]) + length(MarkerGroups[[r1]][[4]]) # Number of markers to define the cell type
+        # Scoring system: [ +1 for each hit - (4 * markers that were required but were given the wrong tag) - 2 * markers that were queried that were not required ] / all required to define the cell type
+        Ranking[r1] <-  (length(MarkerGroups[[r1]][[2]]) - 4*DoubleMisUseMarker- 2*(PenaltiesOfMarkers - DoubleMisUseMarker)) / (TotalNumberOfMarkers)    
     }
+    
+    if ( is.null(finalResults[["Ranking"]][[listPhenotypes[q]]]) && length(Ranking) == 1) { # fixes bug where only one numeric in the first slot would create a list of single numerics
+        finalResults[["Ranking"]][[listPhenotypes[q]]] <- as.list(Ranking)
+        finalResults[["Ranking"]][[listPhenotypes[q]]] <- finalResults[["Ranking"]][[listPhenotypes[q]]][[1]] # sloppy trick to set list up correctly
+    } else {
+        finalResults[["Ranking"]][[listPhenotypes[q]]] <- Ranking
+    }
+    
+    #----------------------------------------------------------- Reorder Results
+    
+    SortOrder <- sort(finalResults[["Ranking"]][[listPhenotypes[q]]], decreasing=TRUE, index.return = TRUE )$ix
+    
+    tmpTrue <- which(KeepMarkerNoDouble == FALSE)
+    if ( length(tmpTrue) >= 1 ) {
+        for ( m1 in 1 : length(tmpTrue) ) {
+            SortOrder <- SortOrder[-which ( SortOrder == tmpTrue[m1])]
+        }
+    }
+    
+    # Remembers if we need to add a "+ more" comment provided that we removed at least one cell type
+    AddPlusMore <- FALSE
+    if ( length(SortOrder) > MaxHitsPht ) {
+        AddPlusMore <- TRUE # track if "+ more" needs to be added
+        SortOrder <- SortOrder[1:MaxHitsPht] # only takes the top MaxHitsPht amount
+    }
+
+    finalResults[["Ranking"]][[listPhenotypes[q]]]        <- finalResults[["Ranking"]][[listPhenotypes[q]]][SortOrder]
+    finalResults[["Markers"]][[listPhenotypes[q]]]        <- finalResults[["Markers"]][[listPhenotypes[q]]][SortOrder]
+    finalResults[["Marker_Groups"]][[listPhenotypes[q]]]  <- finalResults[["Marker_Groups"]][[listPhenotypes[q]]][SortOrder]
+    finalResults[["Cell_Labels"]][[listPhenotypes[q]]]     <- finalResults[["Cell_Labels"]][[listPhenotypes[q]]][SortOrder]
+            
+    if ( length(which(finalResults[["Ranking"]][[listPhenotypes[q]]] == 1 )) >= 1 ) {
+        PerfectIndices <- which(finalResults[["Ranking"]][[listPhenotypes[q]]] == 1 ) #If perfect score, then only return that one.
+        finalResults[["Ranking"]][[listPhenotypes[q]]]        <- finalResults[["Ranking"]][[listPhenotypes[q]]][PerfectIndices]
+        finalResults[["Markers"]][[listPhenotypes[q]]]        <- finalResults[["Markers"]][[listPhenotypes[q]]][PerfectIndices]
+        finalResults[["Marker_Groups"]][[listPhenotypes[q]]]  <- finalResults[["Marker_Groups"]][[listPhenotypes[q]]][PerfectIndices]
+        finalResults[["Cell_Labels"]][[listPhenotypes[q]]]     <- finalResults[["Cell_Labels"]][[listPhenotypes[q]]][PerfectIndices]
+        AddPlusMore <- FALSE            
+    }
+
+    # change clean.res for updateLists
+    indicesSort <- c()
+    for ( g1 in 1 : length(finalResults[["Cell_Labels"]][[listPhenotypes[q]]]) ){
+        indicesSort <- c(indicesSort, which(finalResults[["Cell_Labels"]][[listPhenotypes[q]]][g1] == clean.res[,"celllabel"]) )
+    }
+    if ( length(indicesSort == 1)  && nrow(clean.res) == 1 ) {
+        clean.res <- clean.res
+    } else {
+        if (length(indicesSort) == 1 ) {
+            clean.res <- t(as.matrix(clean.res[indicesSort,]))
+        } else {
+            clean.res <- clean.res[indicesSort,]
+        }
+    }
+    # Compile the new row of the .csv file by updating all the list functions. This is the second time. listPhenotypes.csv uses these second case.
+    r2 <- updateLists ( clean.res, MaxHitsPht, AddPlusMore)
+    listMarkerLabels[[q]] <- r2[1] ; listCellLabels[[q]] <- r2[2]
+    listPhenotypeID[[q]]  <- r2[3] ; listCellID[[q]]     <- r2[4]
+    
+    listMarkers[q] <- cleanMarkersList(finalResults[["Markers"]][[listPhenotypes[q]]], AddPlusMore)
+    listRanking[q] <- cleanRankingList(finalResults[["Ranking"]][[listPhenotypes[q]]], AddPlusMore)
+    
     #----------------------------------------------------------- Children, parents and treeDiagram
     
     # Added in to make the code faster when the user only wants to know if the markers 
     # are in the ontology or not and does not want the tree diagrams
-    if ( VisualizationSkip == FALSE && OnlyOneMarkerSkip == FALSE) {
+    if ( VisualizationSkip == FALSE ) {
 
         # Identify all parents of the matches.
         parent.res <- matrix ( nrow = 0, ncol = 5 )
@@ -652,33 +635,27 @@ for ( q in markersToQuery ) {
     
     #----------------------------------------------------------- The rest
     
-    if ( OnlyOneMarkerSkip == FALSE ) {
-        MarkerGroupsAmount <- NULL
-        NonMatchMarkers <- NULL
-        tmpMarkerGroup <- finalResults[["Marker_Groups"]][[listPhenotypes[q]]]
-        for(p1 in 1: length(tmpMarkerGroup)){
-            MarkerGroupsAmount[p1] <- length(tmpMarkerGroup[[p1]][[2]])
-            NonMatchMarkers[p1] <- length(tmpMarkerGroup[[p1]][[1]]) + length(tmpMarkerGroup[[p1]][[3]]) + length(tmpMarkerGroup[[p1]][[4]])
-        }        
-        temp.num1 <- which(MarkerGroupsAmount == length(unlist(marker.list)) )
-        temp.num2 <- which(NonMatchMarkers == 0 )
-        temp.num  <- intersect(temp.num1, temp.num2)
+    MarkerGroupsAmount <- NULL
+    NonMatchMarkers <- NULL
+    tmpMarkerGroup <- finalResults[["Marker_Groups"]][[listPhenotypes[q]]]
+    for(p1 in 1: length(tmpMarkerGroup)){
+        MarkerGroupsAmount[p1] <- length(tmpMarkerGroup[[p1]][[2]])
+        NonMatchMarkers[p1] <- length(tmpMarkerGroup[[p1]][[1]]) + length(tmpMarkerGroup[[p1]][[3]]) + length(tmpMarkerGroup[[p1]][[4]])
+    }        
+    temp.num1 <- which(MarkerGroupsAmount == length(unlist(marker.list)) )
+    temp.num2 <- which(NonMatchMarkers == 0 )
+    temp.num  <- intersect(temp.num1, temp.num2)
 
-                # Check to see if all markers were hits (A perfect match).
-        if ( length ( tmpMarkerGroup ) == 1 && length(temp.num) == 1 ) {
-                listPhenotypesuccess[[q]] <- ( "Yes" )
-        } 
-        if ( length ( tmpMarkerGroup ) > 1 && length(temp.num) > 1 ) {
-                listPhenotypesuccess[[q]] <- paste( "Yes - ", length (temp.num) , " hits", sep = "" )
-#                 listPhenotypesuccess[[q]] <- paste( "Yes - ", length ( which(MarkerGroupsAmount == length(unlist(marker.list)) )), " hits", sep = "" )
-        }
-#         if ( length ( finalResults[["Marker_Groups"]][[listPhenotypes[q]]] ) > 1 && temp.num >= MaxHitsPht ) {
-#                 listPhenotypesuccess[[q]] <- paste( "Yes - ", length ( tmpMarkerGroup ), " hits or more", sep = "" )
-# #                 listPhenotypesuccess[[q]] <- paste( "Yes - ", length ( which(MarkerGroupsAmount == length(unlist(marker.list)) )), " hits or more", sep = "" )
-#         }
-        listPhenotypesuccess[[q]] <-  sub("5$", "5 or more", listPhenotypesuccess[[q]])
+            # Check to see if all markers were hits (A perfect match).
+    if ( length ( tmpMarkerGroup ) == 1 && length(temp.num) == 1 ) {
+            listPhenotypesuccess[[q]] <- ( "Yes" )
+    } 
+    if ( length ( tmpMarkerGroup ) > 1 && length(temp.num) > 1 ) {
+            listPhenotypesuccess[[q]] <- paste( "Yes - ", length (temp.num) , " hits", sep = "" )
     }
-    
+
+    listPhenotypesuccess[[q]] <-  sub("5$", "5 or more", listPhenotypesuccess[[q]])
+
     # The time for one marker/phenotype to be queried
     if ( CompInfo == TRUE ) { cat ( "Time elapsed:", timeOutput(start), "\n" ) }
     # Shown so the user knows how far the code has run

@@ -75,14 +75,17 @@ cleanRankingList <- function ( temp, AddPlusMore ) {
 
 #################################################################################
 # Organize which markers are required, which are extra, which are in the experiment and not used, 
-        # and which additional ones would be required to get a perfect match.
+# and which additional ones would be required to get a perfect match.
 MarkerGroupsFunc <- function ( temp.string, query.dir.list, postfix, save.dir, query.file.list, prefix.info, CompInfo, marker.list.short, exp.marker.list.short, AllMarkerGroups, endpoint=endpoint ) {
 
     MarkerGroups <- list()
     for ( y1 in 1 : length(temp.string) ){
         temp.res.all <- c()
         for ( y2 in 1:4 ) {
-            fname <- paste( query.dir.list[y2], temp.string[[y1]][1], postfix[y2], sep="")
+            fname <- paste( query.dir.list[y2], sub("/", "_", temp.string[[y1]][1]), postfix[y2], sep="")
+#             # Fixes a bug when trying to save cell type of "F4/80-negative adipose macrophage".
+#             # the "sub" replaces the "/" with a "_" to avoid R thinking that F4 is a folder.
+#             fname <- paste ( save.dirParentsQuery, sub ( "/","_", ( clean.res[i, "celllabel"] ) ), '.csv', sep = "" )
             if( !file.exists ( fname ) ) {
                 if ( CompInfo == TRUE && y2 == 1 ) { cat ( "Querying cell label:", temp.string[[y1]][1], "\n" ) }
                 temp.res <- queryMarker ( celllabel = temp.string[[y1]][1], query.file = query.file.list[[y2]], prefix.info = prefix.info, CompInfo=CompInfo, endpoint=endpoint, exactMatch=TRUE)  
@@ -160,7 +163,9 @@ MarkerGroupsFunc <- function ( temp.string, query.dir.list, postfix, save.dir, q
             for ( w1 in 1 : length(ExpNeededMarkers)){
                 for ( w2 in 1 : length(temp.list.tags)){
                     if( grepl(ExpNeededMarkers[w1], temp.list.tags[w2])){
-                        ExpNeededMarkers[w1] <- temp.list.tags[w2]
+                        if( grepl(temp.list.tags[w2], ExpNeededMarkers[w1])){
+                            ExpNeededMarkers[w1] <- temp.list.tags[w2]
+                        }
                     }
                 }
             }
@@ -175,6 +180,7 @@ MarkerGroupsFunc <- function ( temp.string, query.dir.list, postfix, save.dir, q
             tmp2 <- ExpNeededMarkers
             tmp2 <- gsub("[+]$",  "", tmp2); tmp2 <- gsub("-$",  "", tmp2); tmp2 <- gsub("hi$", "", tmp2);   tmp2 <- gsub("lo$", "", tmp2)
             RemoveIndices <- NULL
+
             # for problems with has_pmp in the CL at the same time as low_PMA or high_PMA
             for ( w1 in 1 : length(tmp2) ) {
                 if( length(which (tmp1 == tmp2[w1]) >= 1 ) ) {
@@ -695,7 +701,8 @@ return <- c("select distinct ?x ?label",
 # function for loading prefix.info data
 flowCL_query_data_prefix.info <- function(){
 
-return <- c("# Common prefix and abbreviation",                                                       
+return <- c("# Common prefix and abbreviation",      
+"PREFIX sesame: <http://www.openrdf.org/schema/sesame#>",
 "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>",                               
 "prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>",                                    
 "prefix owl: <http://www.w3.org/2002/07/owl#>",                                            
@@ -998,7 +1005,79 @@ return <- c(
 "}"
 )
 }
-
+##################################
+# function for loading hasPlasmaMembranePart data
+flowCL_query_data_hasPlasmaMembranePartDirect <- function(){
+    
+return <- c("select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
+"where",                                                     
+"{",                                                         
+"  ?x a owl:Class.",                                         
+"  ?x rdfs:label ?celllabel.",                               
+"  ?x sesame:directSubClassOf ?sub.",                                
+"  ?sub rdf:type owl:Restriction.",                          
+"  ?sub owl:onProperty has_pmp:.",                         
+"  ?sub owl:someValuesFrom ?marker.",                        
+"  ?marker rdfs:label ?markerlabel. ",                       
+"  has_pmp: rdfs:label ?plabel.",                          
+"  FILTER regex(?markerlabel, \"$marker\", \"i\")",          
+"}")                                                         
+}
+##################################
+# function for loading lacksPlasmaMembranePart data
+flowCL_query_data_lacksPlasmaMembranePartDirect <- function(){
+    
+return <- c("select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
+"where",                                                     
+"{",                                                         
+"  ?x a owl:Class.",                                         
+"  ?x rdfs:label ?celllabel.",                               
+"  ?x sesame:directSubClassOf ?sub.",                                
+"  ?sub rdf:type owl:Restriction.",                          
+"  ?sub owl:onProperty lacks_pmp:.",                         
+"  ?sub owl:someValuesFrom ?marker.",                        
+"  ?marker rdfs:label ?markerlabel. ",                       
+"  lacks_pmp: rdfs:label ?plabel.",                          
+"  FILTER regex(?markerlabel, \"$marker\", \"i\")",          
+"}")                                                         
+}
+##################################
+# function for loading lacksPlasmaMembranePart data
+flowCL_query_data_hasHighPlasmaMembraneAmountDirect <- function(){
+    
+return <- c("select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
+"where",                                                     
+"{",                                                         
+"  ?x a owl:Class.",                                         
+"  ?x rdfs:label ?celllabel.",                               
+"  ?x sesame:directSubClassOf ?sub.",                                
+"  ?sub rdf:type owl:Restriction.",                          
+"  ?sub owl:onProperty has_high_pma:.",                         
+"  ?sub owl:someValuesFrom ?marker.",                        
+"  ?marker rdfs:label ?markerlabel. ",                       
+"  has_high_pma: rdfs:label ?plabel.",                          
+"  FILTER regex(?markerlabel, \"$marker\", \"i\")",          
+"}")                                                         
+}
+##################################
+# function for loading lacksPlasmaMembranePart data
+flowCL_query_data_hasLowPlasmaMembraneAmountDirect <- function(){
+    
+return <- c("select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
+"where",                                                     
+"{",                                                         
+"  ?x a owl:Class.",                                         
+"  ?x rdfs:label ?celllabel.",                               
+"  ?x sesame:directSubClassOf ?sub.",                                
+"  ?sub rdf:type owl:Restriction.",                          
+"  ?sub owl:onProperty has_low_pma:.",                         
+"  ?sub owl:someValuesFrom ?marker.",                        
+"  ?marker rdfs:label ?markerlabel. ",                       
+"  has_low_pma: rdfs:label ?plabel.",                          
+"  FILTER regex(?markerlabel, \"$marker\", \"i\")",          
+"}")                                                         
+}
+##################################
 # unit test function to test if the server is connected and ready to be queried
 test.flowCL.connection <- function()
 {
