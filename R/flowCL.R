@@ -310,9 +310,9 @@ for ( q in markersToQuery ) {
     
     # If all results files exist then no querying needs to be done
     if ( skipQuery == TRUE ) {
-        
+
         clean.res <- tabulateResults ( res )
-      
+
     } else {
         # Initialize result collector.
         res <- NULL
@@ -346,7 +346,9 @@ for ( q in markersToQuery ) {
                 penalties <- rep ( 0, nrow ( cur.res ) )
                 
                 cur.res <- cbind ( cur.res, penalties )
+
                 temp.clean.res <- tabulateResults ( cur.res )
+
                 temp.name <- marker.list.short[[q3]][which ( m == marker.list[[q3]] )]
                 fname <- paste ( save.dirResults, 'results_', temp.name, '.csv', sep = "" )
                 # save the marker's data to skip the query next time
@@ -414,6 +416,7 @@ for ( q in markersToQuery ) {
 
     #----------------------------------------------------------- Cell Label 
     # Compile the new row of the .csv file by updating all the list functions. 
+
     r <- updateLists ( clean.res=clean.res, length( which ( clean.res[ ,'Number Of Hits'] >= ( max ( as.numeric ( clean.res[ ,'Number Of Hits'] ) ) - 1 ) )), FALSE)
     listMarkerLabels[[q]] <- r[1] ; listCellLabels[[q]] <- r[2]
     listPhenotypeID[[q]]  <- r[3] ; listCellID[[q]]     <- r[4]

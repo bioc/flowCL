@@ -452,11 +452,14 @@ tabulateResults <- function ( res ) {
 
     number.of.hits <- table ( res[ , 1] )
     res <- cbind ( res, number.of.hits[res[, 1]] )
+
     colnames ( res )[ncol ( res )] <- "Number Of Hits"
     unique.ids <- unique ( res[, 1] )
+
     clean.res <- matrix ( "", nrow = length ( unique.ids ), ncol = ncol ( res ) + 1 )
     colnames ( clean.res ) <- c ( colnames ( res ), "Score" )
     rownames ( clean.res ) <- unique.ids
+
     for ( id in unique.ids ) {
         locate.entries <- which ( res[, 1] == id )
         clean.res[id, ] <- c ( id, res[locate.entries[1], 2], 
@@ -464,8 +467,9 @@ tabulateResults <- function ( res ) {
                                 collapse = "\n" ), sum ( res[locate.entries, 'penalties'] ),
                                 res[locate.entries[1], ncol(res )], 0 )
         clean.res[id, "Score"] <- as.numeric ( clean.res[id, "Number Of Hits"] ) + 
-        as.numeric ( clean.res[id, "penalties"] )
+        sum(as.numeric(unlist(strsplit(clean.res[id, "penalties"], split="\n"))))
     }
+
     # Required because of a bug caused from only having 1 row (f[1,] notation was a problem )
     if ( nrow ( clean.res ) >= 2 ) {
         sort.scores <- sort ( as.numeric ( clean.res[, "Score"] ), 
@@ -493,6 +497,7 @@ timeOutput ( Sys.Date ( ) )
 updateLists <- function ( clean.res, MaxHitsPht, AddPlusMore ) {
     # Creates the lists MarkerLabels, CellLabels, PhenotypeID and CellID
     BreakTrue <- FALSE
+    listMarkerLabels.temp <- listCellLabels.temp <- listPhenotypeID.temp <- listCellID.temp <- NULL
 
     if ( max ( as.numeric ( clean.res[ , 'Number Of Hits'] ) ) >= 1 ) {
         for ( q2 in 1:min ( length ( clean.res[ ,'Number Of Hits'] ), MaxHitsPht ) ) {
