@@ -1,7 +1,7 @@
 Package: flowCL
 Type: Package
 Title: Semantic labelling of flow cytometric cell populations
-Version: 1.9.1
+Version: 1.10.0
 Date: 2016-04-05
 Author: Justin Meskas, Radina Droumeva
 Maintainer: Justin Meskas <jmeskas@bccrc.ca>
