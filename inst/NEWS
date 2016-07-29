@@ -12,3 +12,4 @@
 1.5.0: Same as previous. Bumped by BioConductor.
 1.5.1: Explanded on one marker queries. Uses sesame to find direct sub classes only. 
 1.9.1: Fixed two bugs.
+1.11.1: Fixed one bug involving has_pmp: <http://purl.obolibrary.org/obo/RO_0002104> that occured with the updated ontology. Fixed bug where tag wasn't showing for markers in the (C) category of $Markers. Updated data file and vignette. Fixed bug where a direct query to the markers is no longer needed because of the change in the ontology. Changed CompInfo to Verbose to be more consistent with other packages.
