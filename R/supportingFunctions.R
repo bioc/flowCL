@@ -451,7 +451,8 @@ phenoUnparse <- function ( phenotype, marker.list ) {
 tabulateResults <- function ( res ) {
 
     number.of.hits <- table ( res[ , 1] )
-    res <- cbind ( res, number.of.hits[res[, 1]] )
+    # fixed bug here, added as.vector()
+    res <- cbind ( res, as.vector ( number.of.hits[res[, 1]] ) )
 
     colnames ( res )[ncol ( res )] <- "Number Of Hits"
     unique.ids <- unique ( res[, 1] )
@@ -459,7 +460,6 @@ tabulateResults <- function ( res ) {
     clean.res <- matrix ( "", nrow = length ( unique.ids ), ncol = ncol ( res ) + 1 )
     colnames ( clean.res ) <- c ( colnames ( res ), "Score" )
     rownames ( clean.res ) <- unique.ids
-
     for ( id in unique.ids ) {
         locate.entries <- which ( res[, 1] == id )
         clean.res[id, ] <- c ( id, res[locate.entries[1], 2],

@@ -1,4 +1,4 @@
-flowCL <- function ( MarkerList = "HIPC", ExpMrkrLst = NULL, Indices = NULL, Verbose = FALSE, KeepArch = TRUE,
+flowCL2 <- function ( MarkerList = "HIPC", ExpMrkrLst = NULL, Indices = NULL, Verbose = FALSE, KeepArch = TRUE,
                      MaxHitsPht = 5, OntolNamesTD = FALSE, ResetArch = FALSE, VisualSkip = FALSE ) {
 
 # flowCL (Semantic labelling of flow cytometric cell populations)
@@ -273,7 +273,7 @@ for ( q in markersToQuery ) {
     if (returnTrue == TRUE)
         return()
 
-    # Default skip Query to TRUE. If it changes to FALSE then querying will have to be done.
+    # Default skipQuery to TRUE. If it changes to FALSE then querying will have to be done.
     skipQuery <- TRUE
     # Create res as a NULL variable for easy additions of indices
     res <- NULL
