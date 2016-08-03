@@ -5,7 +5,8 @@ Version: 1.11.2
 Date: 2016-08-03
 Author: Justin Meskas, Radina Droumeva
 Maintainer: Justin Meskas <jmeskas@bccrc.ca>
-Depends: R (>= 3.2), Rgraphviz, SPARQL, graph
+Depends: R (>= 3.3), Rgraphviz, SPARQL
+Imports: methods, grDevices, utils, graph
 Description: Semantic labelling of flow cytometric cell populations.
 biocViews: FlowCytometry
 Suggests: RUnit, BiocGenerics
