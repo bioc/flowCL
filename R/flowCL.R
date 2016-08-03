@@ -1,4 +1,4 @@
-flowCL2 <- function ( MarkerList = "HIPC", ExpMrkrLst = NULL, Indices = NULL, Verbose = FALSE, KeepArch = TRUE,
+flowCL <- function ( MarkerList = "HIPC", ExpMrkrLst = NULL, Indices = NULL, Verbose = FALSE, KeepArch = TRUE,
                      MaxHitsPht = 5, OntolNamesTD = FALSE, ResetArch = FALSE, VisualSkip = FALSE ) {
 
 # flowCL (Semantic labelling of flow cytometric cell populations)
