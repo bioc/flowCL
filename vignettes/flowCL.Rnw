@@ -68,7 +68,7 @@ flowCL("Archive")
 @
 \end{small}
 
-This pre-loaded archive has the possibility of being outdated. This archive will be updated by the maintainer, along with the vignette, whenever the ontology is updated. More discussion of this is in the ``Last Comments'' section. The current version was updated last on March $18^{th}$ 2014. To check that the version is up to date run:
+This pre-loaded archive has the possibility of being outdated. This archive will be updated by the maintainer, along with the vignette, whenever the ontology is updated. More discussion of this is in the ``Last Comments'' section. The current version was updated last on January $4^{th}$ 2018. To check that the version is up to date run:
 
 \begin{small}
 <<label=Date, fig=FALSE, results=hide>>=
@@ -76,7 +76,7 @@ flowCL("Date")
 @
 \end{small}
 
-If the returned date matches the one above, then the pre-loaded archive is the most up to date. Please note that the user can skip this section altogether and {\it \textbf{flowCL}} will always give the most current archive. The down side is the code will take time every time there is something new to query while building an archive.
+If the returned date matches or is prior to the one above, then the pre-loaded archive is the most up to date. Please note that the user can skip this section altogether and {\it \textbf{flowCL}} will always give the most current archive. The down side is the code will take time every time there is something new to query while building an archive.
 
 
 \subsection{Simple Example}
@@ -143,7 +143,7 @@ If the user wants all possible HIPC results and all HIPC tree diagrams, then the
 \item
 There are two packages that {\it \textbf{flowCL}} depends upon. The first is {\it \textbf{SPARQL}}, which is used when retrieving cell ontology data. The other is {\it \textbf{Rgraphviz}}, which is used when creating the tree diagrams.
 \item
-The user should note that since the ontology can be and will be updated, the R results shown in this vignette, both the figures and the static text, may not match a live run of {\it \textbf{flowCL}}. Also the data files containing a pre-loaded archive can be outdated. The maintainer will try to keep the vignette and data files as up to date as possible. The data files as well as text and the figures in the examples from this vignette describe results from the cell ontology that was last updated on February $1^{st}$ 2016.
+The user should note that since the ontology can be and will be updated, the R results shown in this vignette, both the figure and the static text, may not match a live run of {\it \textbf{flowCL}}. Also the data files containing a pre-loaded archive can be outdated. The maintainer will try to keep the vignette and data files as up to date as possible. The data files as well as text and the figures in the examples from this vignette describe results from the cell ontology that was last updated on December $11^{th}$ 2017.
 \end{itemize}
 % \bibliographystyle{plain}
 % \bibliography{flowCL}

@@ -94,6 +94,12 @@ MarkerGroupsFunc <- function ( temp.string, query.dir.list, postfix, save.dir, q
                     temp.res <- matrix ( ncol = 2, nrow = 0 )
                     colnames ( temp.res ) <- c ( "ID", "Synonym Match" )
                 }
+
+                temp.loc <- which(colnames(temp.res) == "pl")
+                if (length(temp.loc) >= 1){
+                    colnames(temp.res)[which(colnames(temp.res) == "pl")] <- "plabel"
+                }
+
                 # Create 4 csv files for each returned cell label (has, lacks, low, high)
                 write.csv ( temp.res, fname, row.names = FALSE )
             }
@@ -127,7 +133,8 @@ MarkerGroupsFunc <- function ( temp.string, query.dir.list, postfix, save.dir, q
             temp.res.all[which(temp.res.all[,6]=="CD3e"), 6] <- "CD3"
         }
         suppressWarnings(temp.res.all[which(temp.res.all[,3] == "lacks_plasma_membrane_part")     ,6] <- paste(temp.res.all[which(temp.res.all[,3] == "lacks_plasma_membrane_part"),     6], "-", sep="")  )
-        suppressWarnings(temp.res.all[which(temp.res.all[,3] == "\"has plasma membrane part\"@en")       ,6] <- paste(temp.res.all[which(temp.res.all[,3] == "\"has plasma membrane part\"@en"),       6], "+", sep="")  )
+        # suppressWarnings(temp.res.all[which(temp.res.all[,3] == "\"has plasma membrane part\"@en"),6] <- paste(temp.res.all[which(temp.res.all[,3] == "\"has plasma membrane part\"@en"),6], "+", sep="")  )
+        suppressWarnings(temp.res.all[which(temp.res.all[,3] == "has plasma membrane part"),       6] <- paste(temp.res.all[which(temp.res.all[,3] == "has plasma membrane part"),       6], "+", sep="")  )
         suppressWarnings(temp.res.all[which(temp.res.all[,3] == "has_low_plasma_membrane_amount") ,6] <- paste(temp.res.all[which(temp.res.all[,3] == "has_low_plasma_membrane_amount"), 6], "lo", sep="") )
         suppressWarnings(temp.res.all[which(temp.res.all[,3] == "has_high_plasma_membrane_amount"),6] <- paste(temp.res.all[which(temp.res.all[,3] == "has_high_plasma_membrane_amount"),6], "hi", sep="") )
         # remove all duplicates of CD3's
@@ -142,6 +149,7 @@ MarkerGroupsFunc <- function ( temp.string, query.dir.list, postfix, save.dir, q
         }
         temp.list.tags <- setdiff(temp.res.all[,6], unlist( marker.list.short ) )
         temp.list.No.tags <- temp.list.tags
+
         # Remove tags
         temp.list.No.tags <- gsub("[+]$",  "", temp.list.No.tags); temp.list.No.tags <- gsub("-$",  "", temp.list.No.tags)
         temp.list.No.tags <- gsub("hi$", "", temp.list.No.tags);   temp.list.No.tags <- gsub("lo$", "", temp.list.No.tags)
@@ -165,11 +173,12 @@ MarkerGroupsFunc <- function ( temp.string, query.dir.list, postfix, save.dir, q
             for ( w1 in 1 : length(ExpNeededMarkers)){
                 for ( w2 in 1 : length(temp.list.tags)){
                     if( grepl(ExpNeededMarkers[w1], temp.list.tags[w2])){
-                            ExpNeededMarkers[w1] <- temp.list.tags[w2]
+                        ExpNeededMarkers[w1] <- temp.list.tags[w2]
                     }
                 }
             }
         }
+
         NeededMarkers <- intersect(temp.res.all[,6], unlist( marker.list.short ) ) # markers that are part of the cell label marker list and are part of the input marker list
         UnneededMarkers <- setdiff( unlist( marker.list.short ), temp.res.all[,6] ) # markers that are part of the input marker list but not part of the cell label marker list
 
@@ -217,7 +226,7 @@ tempMarkerShort <- function (temp.marker.short) {
 # produces a flow chart.
 
 treeDiagram <- function ( child.analysis, clean.res, phenotype, OntolNamesTD, marker.list.short, marker.list, save.dir, listColours_flowCL = "" ,
-                          MarkerGroups = "", CellLabels = "" ) {
+                            MarkerGroups = "", CellLabels = "" ) {
 
     # Sort the child.analysis by starting with the cell population which has
     # the most children to the one with the least-- i.e. is the most likely to be the
@@ -394,8 +403,8 @@ phenoParse <- function ( phenotype )  {
     }
 
     # Return a list of positive, negative, low and high markers
-    res <- list ( `Positive` = markers[signs == "+"], `Negative` = markers[signs == "-"] ,
-                  `High\\Bright` = markers[signs == "hi"], `Low\\Dim` = markers[signs == "lo"])
+    res <- list (   `Positive` = markers[signs == "+"],  `Negative` = markers[signs == "-"] ,
+                `High\\Bright` = markers[signs == "hi"], `Low\\Dim` = markers[signs == "lo"])
     return ( res )
 }
 
@@ -736,11 +745,11 @@ flowCL_query_data_getParentClasses <- function(){
 return <- c("# Find all parent classes of the cell type of interest. Note that for some reason,",
 "# matching on ?x does not work, but matching on ?celllabel (x's label) does.",
 "# Matching directly on ?x works on http://sparql.hegroup.org/sparql !",
-# "select distinct ?x ?celllabel ?parent ?pl",
+# "select distinct ?x ?celllabel ?parent ?pl", # Jonathan's and Alan's fix to remove the @en by converting to a string
 "select distinct ?x ?celllabel ?parent ?parentlabel",
 "where",
 "{",
-# "  BIND (STR(?parentlabel) AS ?pl )",
+# "  BIND (STR(?parentlabel) AS ?pl )", # Jonathan's and Alan's fix to remove the @en by converting to a string
 "  ?parent a owl:Class.",
 "  ?x a owl:Class.",
 "  ?x rdfs:label ?celllabel.",
@@ -752,16 +761,19 @@ return <- c("# Find all parent classes of the cell type of interest. Note that f
 ##################################
 # function for loading hasPlasmaMembranePart data
 flowCL_query_data_hasPlasmaMembranePart <- function(){
-return <- c("select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
+return <- c(
+"select distinct ?x ?celllabel ?pl ?marker ?markerlabel",
+# "select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
 "where",
 "{",
+"  BIND (STR(?plabel) AS ?pl )", # Jonathan's and Alan's fix to remove the @en by converting to a string
 "  ?x a owl:Class.",
 "  ?x rdfs:label ?celllabel.",
 "  ?x rdfs:subClassOf ?sub.",
 "  ?sub rdf:type owl:Restriction.",
 "  ?sub owl:onProperty has_pmp:.",
 "  ?sub owl:someValuesFrom ?marker.",
-"  ?marker rdfs:label ?markerlabel.  ",
+"  ?marker rdfs:label ?markerlabel.",
 "  has_pmp: rdfs:label ?plabel.",
 "  FILTER regex(?markerlabel, \"$marker\", \"i\")",
 "}")
@@ -817,42 +829,44 @@ return <- c("select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
 "  FILTER regex(?markerlabel, \"$marker\", \"i\")",
 "}")
 }
-##################################
-# function for loading hasPMPsingle data
-flowCL_query_data_hasPMPsingle <- function(){
-return <- c("select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
-"where",
-"{",
-"  ?x a owl:Class.",
-"  ?x rdfs:label ?celllabel.",
-"  ?x rdfs:subClassOf ?sub.",
-"  ?sub rdf:type owl:Restriction.",
-"  ?sub owl:onProperty has_pmp:.",
-"  ?sub owl:someValuesFrom ?marker.",
-"  ?marker rdfs:label ?markerlabel. ",
-"  has_pmp: rdfs:label ?plabel.",
-"  FILTER regex(?markerlabel, \"$marker\", \"i\")",
-"  FILTER regex(?celllabel, \"$celllabel\", \"i\")",
-"}")
-}
-##################################
-# function for loading lacksPMPsingle data
-flowCL_query_data_lacksPMPsingle <- function(){
-return <- c("select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
-"where",
-"{",
-"  ?x a owl:Class.",
-"  ?x rdfs:label ?celllabel.",
-"  ?x rdfs:subClassOf ?sub.",
-"  ?sub rdf:type owl:Restriction.",
-"  ?sub owl:onProperty lacks_pmp:.",
-"  ?sub owl:someValuesFrom ?marker.",
-"  ?marker rdfs:label ?markerlabel. ",
-"  lacks_pmp: rdfs:label ?plabel.",
-"  FILTER regex(?markerlabel, \"$marker\", \"i\")",
-"  FILTER regex(?celllabel, \"$celllabel\", \"i\")",
-"}")
-}
+# ##################################
+# # function for loading hasPMPsingle data
+# flowCL_query_data_hasPMPsingle <- function(){
+# return <- c("select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
+# # return <- c("select distinct ?x ?celllabel ?pl ?marker ?markerlabel",
+# "where",
+# "{",
+# # "  BIND (STR(?plabel) AS ?pl )", # Jonathan's and Alan's fix to remove the @en by converting to a string
+# "  ?x a owl:Class.",
+# "  ?x rdfs:label ?celllabel.",
+# "  ?x rdfs:subClassOf ?sub.",
+# "  ?sub rdf:type owl:Restriction.",
+# "  ?sub owl:onProperty has_pmp:.",
+# "  ?sub owl:someValuesFrom ?marker.",
+# "  ?marker rdfs:label ?markerlabel. ",
+# "  has_pmp: rdfs:label ?plabel.",
+# "  FILTER regex(?markerlabel, \"$marker\", \"i\")",
+# "  FILTER regex(?celllabel, \"$celllabel\", \"i\")",
+# "}")
+# }
+# ##################################
+# # function for loading lacksPMPsingle data
+# flowCL_query_data_lacksPMPsingle <- function(){
+# return <- c("select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
+# "where",
+# "{",
+# "  ?x a owl:Class.",
+# "  ?x rdfs:label ?celllabel.",
+# "  ?x rdfs:subClassOf ?sub.",
+# "  ?sub rdf:type owl:Restriction.",
+# "  ?sub owl:onProperty lacks_pmp:.",
+# "  ?sub owl:someValuesFrom ?marker.",
+# "  ?marker rdfs:label ?markerlabel. ",
+# "  lacks_pmp: rdfs:label ?plabel.",
+# "  FILTER regex(?markerlabel, \"$marker\", \"i\")",
+# "  FILTER regex(?celllabel, \"$celllabel\", \"i\")",
+# "}")
+# }
 ##################################
 # function for loading the date
 flowCL_query_date <- function(){
@@ -935,9 +949,11 @@ return <- c(
 # function for querying celllabel's has PMP
 flowCL_query_data_celllabel_hasPMP <- function(){
 return <- c(
-"select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
+# "select distinct ?x ?celllabel ?plabel ?marker ?markerlabel",
+"select distinct ?x ?celllabel ?pl ?marker ?markerlabel",
 "where",
 "{",
+"  BIND (STR(?plabel) AS ?pl )", # Jonathan's and Alan's fix to remove the @en by converting to a string
 "  ?x a owl:Class.",
 "  ?x rdfs:label ?celllabel.",
 "  ?x rdfs:subClassOf ?sub.",

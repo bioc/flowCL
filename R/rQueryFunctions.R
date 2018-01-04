@@ -181,16 +181,7 @@ parentQuery <- function ( child.label = "common myeloid progenitor",
     child.label <- paste ( "^", child.label, "$", sep = "", collapse = "" )
     query <- gsub ( "\\$label", child.label, query )
     # Execute query
-    # res <- SPARQL ( url=endpoint, query )$results
-
-    # print(" ")
-    # print("parentQuery")
-    # print(" ")
-    # print(query)
     res <- SPARQL ( url = endpoint, query )$results
-    # print(" ")
-    # print(res)
-    # print(" ")
 
     return ( res )
 }
@@ -234,14 +225,8 @@ queryMarker <- function ( marker = NULL, query.file = "getMatchingSynonyms.txt",
     }
 
     # Execute query
-    # print(" ")
-    # print("queryMarker")
-    # print(" ")
-    # print(query)
     res <- SPARQL ( url = endpoint, query )$results
-    # print(" ")
-    # print(res)
-    # print(" ")
+
     return ( res )
 }
 

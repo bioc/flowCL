@@ -1,5 +1,14 @@
-flowCL <- function ( MarkerList = "HIPC", ExpMrkrLst = NULL, Indices = NULL, Verbose = FALSE, KeepArch = TRUE,
-                     MaxHitsPht = 5, OntolNamesTD = FALSE, ResetArch = FALSE, VisualSkip = FALSE ) {
+flowCL <- function (
+    MarkerList = "HIPC",
+    ExpMrkrLst = NULL,
+    Indices = NULL,
+    Verbose = FALSE,
+    KeepArch = TRUE,
+    MaxHitsPht = 5,
+    OntolNamesTD = FALSE,
+    ResetArch = FALSE,
+    VisualSkip = FALSE
+) {
 
 # flowCL (Semantic labelling of flow cytometric cell populations)
 # Authors: Justin Meskas (jmeskas@bccrc.ca), Radina Droumeva (radina.droumeva@gmail.com )
@@ -20,9 +29,9 @@ prefix.info                           <- flowCL_query_data_prefix.info()
 que.getParentClasses                  <- flowCL_query_data_getParentClasses()
 que.hasPlasmaMembranePart             <- flowCL_query_data_hasPlasmaMembranePart()
 que.hasProperLabel                    <- flowCL_query_data_hasProperLabel()
-que.hasPMPsingle                      <- flowCL_query_data_hasPMPsingle()
+# que.hasPMPsingle                      <- flowCL_query_data_hasPMPsingle()
 que.hasProperSynonym                  <- flowCL_query_data_hasProperSynonym()
-que.lacksPMPsingle                    <- flowCL_query_data_lacksPMPsingle()
+# que.lacksPMPsingle                    <- flowCL_query_data_lacksPMPsingle()
 que.lacksPlasmaMembranePart           <- flowCL_query_data_lacksPlasmaMembranePart()
 que.hasLowPlasmaMembraneAmount        <- flowCL_query_data_hasLowPlasmaMembraneAmount()
 que.hasHighPlasmaMembraneAmount       <- flowCL_query_data_hasHighPlasmaMembraneAmount()
@@ -37,11 +46,10 @@ if ( cdTest ( MarkerList ) == TRUE)
 
 # Define the cell.ctde.net SPARQL endpoint
 # endpoint <- "http://cell.ctde.net:8080/openrdf-sesame/repositories/CL"
-# endpoint <- "http://75.127.15.173:8080/openrdf-sesame/repositories/CL" # Jonathan April 18 2017
+# endpoint <- "http://75.127.15.173:8080/openrdf-sesame/repositories/CL" # Jonathan April 18 2017 (different way to get to Alan's)
 endpoint <- "http://cell.inference.me:7200/repositories/CL" # Jonathan Nov 17 2017
 
-
-print(endpoint)
+# print(endpoint)
 
 # Check date of Ontology update
 if ( length(MarkerList) == 1 ) {
@@ -329,6 +337,11 @@ for ( q in markersToQuery ) {
                     if ( q3 == 4 ) { cur.res <- queryMarker ( marker = m, query.file = QueryFile[[q3]], prefix.info = prefix.info, Verbose=Verbose, endpoint=endpoint, exactMatch=TRUE ) }
                     # temp fix for "\"has plasma membrane part\"@en" bug
                     # cur.res[,3] <- sapply(1:length(cur.res[,3]), function(x) {substr(cur.res[x,3], 2, nchar(cur.res[x,3])-4)}) # " and "@en removal
+
+                    temp.loc <- which(colnames(cur.res) == "pl")
+                    if (length(temp.loc) >= 1){
+                        colnames(cur.res)[which(colnames(cur.res) == "pl")] <- "plabel"
+                    }
                 }
                 if ( nrow ( cur.res ) == 0 ) {
                     if ( Verbose == TRUE ) {
@@ -443,18 +456,30 @@ for ( q in markersToQuery ) {
 
     # Organize which markers are required, which are extra, which are in the experiment and not used,
     # and which additional ones would be required to get a perfect match.
-    MarkerGroups    <- MarkerGroupsFunc(temp.string=temp.string, query.dir.list=query.dir.list, postfix=postfix, save.dir=save.dir,
-                                        query.file.list=query.file.list, prefix.info=prefix.info, Verbose=Verbose, marker.list.short=marker.list.short,
-                                        exp.marker.list.short=exp.marker.list.short, AllMarkerGroups=FALSE, endpoint=endpoint)
+    MarkerGroups <- MarkerGroupsFunc(
+        temp.string=temp.string,
+        query.dir.list=query.dir.list,
+        postfix=postfix,
+        save.dir=save.dir,
+        query.file.list=query.file.list,
+        prefix.info=prefix.info,
+        Verbose=Verbose,
+        marker.list.short=marker.list.short,
+        exp.marker.list.short=exp.marker.list.short,
+        AllMarkerGroups=FALSE,
+        endpoint=endpoint
+        )
 
     finalResults[["Marker_Groups"]][[listPhenotypes[q]]] <- MarkerGroups # List form
     # Display in a bracket form
     temp.list <- list()
     for ( q5 in 1 : length ( MarkerGroups ) ) {
-        temp.list[[q5]] <- paste ( "{", paste(MarkerGroups[[q5]][[1]], collapse=", "), "}",
-                                        paste(MarkerGroups[[q5]][[2]], collapse=", "),
-                                   "(", paste(MarkerGroups[[q5]][[3]], collapse=", "), ")",
-                                   "[", paste(MarkerGroups[[q5]][[4]], collapse=", "), "]")
+        temp.list[[q5]] <- paste (
+            "{", paste(MarkerGroups[[q5]][[1]], collapse=", "),
+            "}", paste(MarkerGroups[[q5]][[2]], collapse=", "),
+            "(", paste(MarkerGroups[[q5]][[3]], collapse=", "), ")",
+            "[", paste(MarkerGroups[[q5]][[4]], collapse=", "), "]"
+            )
         finalResults[["Markers"]][[listPhenotypes[q]]] <- temp.list # Bracket form
     }
 
@@ -502,9 +527,9 @@ for ( q in markersToQuery ) {
     # fixes a bug caused by removing all cell types because they all are
     if ( all ( KeepMarkerNoDouble == FALSE ) ) {
         warning ( paste0("All cell types of ", phenotype, " are using at least one marker with the wrong tag. ",
-                  "These cases are deemed to be completely wrong and should be removed, however, ",
-                  "they are the only ones left so flowCL will not remove them to avoid an error. ",
-                  "Please check to see that you inputted correctly, and consider quierying something different.", collapse = "") )
+                    "These cases are deemed to be completely wrong and should be removed, however, ",
+                    "they are the only ones left so flowCL will not remove them to avoid an error. ",
+                    "Please check to see that you inputted correctly, and consider quierying something different.", collapse = "") )
         KeepMarkerNoDouble <- rep(TRUE, length(MarkerGroups))
     }
 
@@ -552,11 +577,6 @@ for ( q in markersToQuery ) {
         }
     }
 
-    print("")
-    print("clean.res")
-    print("")
-    print(clean.res)
-
     # Compile the new row of the .csv file by updating all the list functions. This is the second time. listPhenotypes.csv uses these second case.
     r2 <- updateLists ( clean.res, MaxHitsPht, AddPlusMore)
     listMarkerLabels[[q]] <- r2[1] ; listCellLabels[[q]] <- r2[2]
@@ -593,20 +613,15 @@ for ( q in markersToQuery ) {
         write.csv ( parent.res, fname, row.names = FALSE )
         if ( Verbose == TRUE ) { cat ( 'Parent information saved in', fname, "\n" ) }
 
-        print("")
-        print("parent.res")
-        print("")
-        print(parent.res)
+        # print(grep(x = parent.res[ , 'parentlabel'], pattern = "@en"))
 
-        print(grep(x = parent.res[ , 'parentlabel'], pattern = "@en"))
-
-        parent.res <- parent.res[-grep(x = parent.res[ , 'parentlabel'], pattern = "@en"),]
+        # January 2018 fix. For now the solution was to remove the @en labels. In the future it might make sense to uncomment the
+        #  flowCL_query_data_getParentClasses parts in supportingFunctions.R
+        if ( length(grep(x = parent.res[ , 'parentlabel'], pattern = "@en")) >= 1 ){
+            parent.res <- parent.res[-grep(x = parent.res[ , 'parentlabel'], pattern = "@en"),]
+        }
 
         summary <- table ( parent.res [ , 'parentlabel'] )
-        # summary <- table ( parent.res [ , 'pl'] )
-
-
-        # print(which(summary))
 
         scores2 <- sapply ( names ( summary ), function ( p ) mean ( as.numeric ( as.character ( parent.res [ which ( parent.res [ , 'parentlabel'] == p ), 'Score'] ) ) ) )
         # The higher up in the tree -- the more times a population is called a parent to
@@ -654,13 +669,12 @@ for ( q in markersToQuery ) {
             temp.MarkerGroups[[u1]] <- temp.MarkerGroups[[u1]][c(2,3,4)]
         }
 
-        print("Finished parent Query Section 1")
-        finalResults[[listPhenotypes[q]]] <- treeDiagram ( child.analysis, clean.res, phenotype, OntolNamesTD, marker.list.short,
-                                                           marker.list, save.dir, listColours_flowCL = listColours_flowCL,
-                                                           MarkerGroups = temp.MarkerGroups, CellLabels = temp.string )
+        finalResults[[listPhenotypes[q]]] <- treeDiagram (
+            child.analysis, clean.res, phenotype, OntolNamesTD, marker.list.short,
+            marker.list, save.dir, listColours_flowCL = listColours_flowCL,
+            MarkerGroups = temp.MarkerGroups, CellLabels = temp.string
+            )
     }# end of visualization if statement
-
-    print("Finished parent Query Section")
 
     #----------------------------------------------------------- The rest
 
@@ -675,12 +689,12 @@ for ( q in markersToQuery ) {
     temp.num2 <- which(NonMatchMarkers == 0 )
     temp.num  <- intersect(temp.num1, temp.num2)
 
-            # Check to see if all markers were hits (A perfect match).
+    # Check to see if all markers were hits (A perfect match).
     if ( length ( tmpMarkerGroup ) == 1 && length(temp.num) == 1 ) {
-            listPhenotypesuccess[[q]] <- ( "Yes" )
+        listPhenotypesuccess[[q]] <- ( "Yes" )
     }
     if ( length ( tmpMarkerGroup ) > 1 && length(temp.num) > 1 ) {
-            listPhenotypesuccess[[q]] <- paste( "Yes - ", length (temp.num) , " hits", sep = "" )
+        listPhenotypesuccess[[q]] <- paste( "Yes - ", length (temp.num) , " hits", sep = "" )
     }
 
     listPhenotypesuccess[[q]] <-  sub("5$", "5 or more", listPhenotypesuccess[[q]])
@@ -702,8 +716,13 @@ if ( length ( listPhenotypes ) == 1 ) {
 } else {
     transpose.listP <- FALSE # if there is two or more rows
 }
+# print(listPhenotypes)
+# print(mode(listPhenotypes))
+# print(as.character(listPhenotypes))
 
-listPhenotypes <- cbind (      listPhenotypes,      listPhenotypeUpdate,    listExpPhenotypes,   listExpPhenotypeUpdate, listPhenotypesuccess, listPhenotypeID, listMarkerLabels, listMarkers, listRanking,          listCellID, listCellLabels )
+# listPhenotypes <- cbind (      gsub("[+]","[+]", listPhenotypes),      listPhenotypeUpdate,    listExpPhenotypes,   listExpPhenotypeUpdate, listPhenotypesuccess, listPhenotypeID, listMarkerLabels, listMarkers, listRanking,          listCellID, listCellLabels )
+# listPhenotypes <- cbind (      listPhenotypes,      listPhenotypeUpdate,    listExpPhenotypes,   listExpPhenotypeUpdate, listPhenotypesuccess, listPhenotypeID, listMarkerLabels, listMarkers, listRanking,          listCellID, listCellLabels )
+listPhenotypes <- cbind (as.character(listPhenotypes),      listPhenotypeUpdate,    listExpPhenotypes,   listExpPhenotypeUpdate, listPhenotypesuccess, listPhenotypeID, listMarkerLabels, listMarkers, listRanking,          listCellID, listCellLabels )
 colnames(listPhenotypes) <- c("Short marker names","Ontology marker names","Experiment markers","Ontology exper. names","Successful Match?",  "Marker ID",     "Marker Label",   "Marker Key", "Score (Out of 1)",  "Cell ID",  "Cell Label")
 
 # If there is only one marker queried the results will only have one row and this cases a small error. "transpose.listP" fixes this
@@ -772,9 +791,9 @@ if ( transpose.listP == TRUE ) { # if there is only one row
     columnof_listPhenotypes <- colnames ( listPhenotypes )
     segment <- strwrap ( listTem, 70 )
     segIndices <- c( 1, 2,  which(regexpr(paste("^", listExpPhenotypes,"$", sep=""), segment) == 1 ),
-                     which(regexpr(paste("^", listExpPhenotypes,"$", sep=""), segment) == 1 ) + 1,
-                     union ( which ( regexpr ( "No", segment ) == 1 ), which ( regexpr ( "Yes", segment ) == 1 ) ),
-                     which ( regexpr("1)", segment ) == 1 ) )
+                        which(regexpr(paste("^", listExpPhenotypes,"$", sep=""), segment) == 1 ) + 1,
+                        union ( which ( regexpr ( "No", segment ) == 1 ), which ( regexpr ( "Yes", segment ) == 1 ) ),
+                        which ( regexpr("1)", segment ) == 1 ) )
     temp <- rep( " ", length ( segment ) )
 
     temp[segIndices] <- columnof_listPhenotypes[1:length(segIndices)]
