@@ -14,3 +14,4 @@
 1.9.1: Fixed two bugs.
 1.11.1: Fixed one bug involving has_pmp: <http://purl.obolibrary.org/obo/RO_0002104> that occured with the updated ontology. Fixed bug where tag wasn't showing for markers in the (C) category of $Markers. Updated data file and vignette. Fixed bug where a direct query to the markers is no longer needed because of the change in the ontology. Changed CompInfo to Verbose to be more consistent with other packages.
 1.11.2: Small bug with R version 3.3.X when using cbind. 
+1.11.4: Ontology has @en attachement to symbolize an english language addition. flowCL was updated to handle this addition. 
