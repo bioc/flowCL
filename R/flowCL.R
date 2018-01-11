@@ -45,11 +45,13 @@ if ( cdTest ( MarkerList ) == TRUE)
     return()
 
 # Define the cell.ctde.net SPARQL endpoint
+
 # endpoint <- "http://cell.ctde.net:8080/openrdf-sesame/repositories/CL"
 # endpoint <- "http://75.127.15.173:8080/openrdf-sesame/repositories/CL" # Jonathan April 18 2017 (different way to get to Alan's)
 endpoint <- "http://cell.inference.me:7200/repositories/CL" # Jonathan Nov 17 2017
 
 # print(endpoint)
+
 
 # Check date of Ontology update
 if ( length(MarkerList) == 1 ) {
@@ -223,7 +225,9 @@ for ( q in markersToQuery ) {
                                     que.hasProperLabel = que.hasProperLabel, que.hasProperSynonym = que.hasProperSynonym, prefix.info = prefix.info, endpoint = endpoint)
 
     # Make a list of the ontology names for each phenotype searched for, which will be exported to a table in .csv form
+
     listPhenotypeUpdate[[q]] <- phenoUnparse ( phenotype, marker.list )
+
 
     phenotype <- gsub("CD3e-", "CD3-", phenotype)
     phenotype <- gsub("HLA.DR", "HLA-DR", phenotype)
@@ -342,6 +346,7 @@ for ( q in markersToQuery ) {
                     if (length(temp.loc) >= 1){
                         colnames(cur.res)[which(colnames(cur.res) == "pl")] <- "plabel"
                     }
+
                 }
                 if ( nrow ( cur.res ) == 0 ) {
                     if ( Verbose == TRUE ) {
@@ -456,6 +461,7 @@ for ( q in markersToQuery ) {
 
     # Organize which markers are required, which are extra, which are in the experiment and not used,
     # and which additional ones would be required to get a perfect match.
+
     MarkerGroups <- MarkerGroupsFunc(
         temp.string=temp.string,
         query.dir.list=query.dir.list,
@@ -480,6 +486,7 @@ for ( q in markersToQuery ) {
             "(", paste(MarkerGroups[[q5]][[3]], collapse=", "), ")",
             "[", paste(MarkerGroups[[q5]][[4]], collapse=", "), "]"
             )
+
         finalResults[["Markers"]][[listPhenotypes[q]]] <- temp.list # Bracket form
     }
 
@@ -674,6 +681,7 @@ for ( q in markersToQuery ) {
             marker.list, save.dir, listColours_flowCL = listColours_flowCL,
             MarkerGroups = temp.MarkerGroups, CellLabels = temp.string
             )
+
     }# end of visualization if statement
 
     #----------------------------------------------------------- The rest
@@ -716,6 +724,7 @@ if ( length ( listPhenotypes ) == 1 ) {
 } else {
     transpose.listP <- FALSE # if there is two or more rows
 }
+
 # print(listPhenotypes)
 # print(mode(listPhenotypes))
 # print(as.character(listPhenotypes))
@@ -723,6 +732,7 @@ if ( length ( listPhenotypes ) == 1 ) {
 # listPhenotypes <- cbind (      gsub("[+]","[+]", listPhenotypes),      listPhenotypeUpdate,    listExpPhenotypes,   listExpPhenotypeUpdate, listPhenotypesuccess, listPhenotypeID, listMarkerLabels, listMarkers, listRanking,          listCellID, listCellLabels )
 # listPhenotypes <- cbind (      listPhenotypes,      listPhenotypeUpdate,    listExpPhenotypes,   listExpPhenotypeUpdate, listPhenotypesuccess, listPhenotypeID, listMarkerLabels, listMarkers, listRanking,          listCellID, listCellLabels )
 listPhenotypes <- cbind (as.character(listPhenotypes),      listPhenotypeUpdate,    listExpPhenotypes,   listExpPhenotypeUpdate, listPhenotypesuccess, listPhenotypeID, listMarkerLabels, listMarkers, listRanking,          listCellID, listCellLabels )
+
 colnames(listPhenotypes) <- c("Short marker names","Ontology marker names","Experiment markers","Ontology exper. names","Successful Match?",  "Marker ID",     "Marker Label",   "Marker Key", "Score (Out of 1)",  "Cell ID",  "Cell Label")
 
 # If there is only one marker queried the results will only have one row and this cases a small error. "transpose.listP" fixes this
