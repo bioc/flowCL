@@ -21,4 +21,5 @@
 1.16.0: Same as previous. Bumped by BioConductor.
 1.17.0: Same as previous. Bumped by BioConductor.
 1.17.1: Ontology has @en attachement to symbolize an english language addition. flowCL was updated to handle this addition. 
+1.17.2: 1.17.1 did not install. Conflicts in supportingFunction were not resolved.
 

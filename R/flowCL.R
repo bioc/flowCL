@@ -45,13 +45,10 @@ if ( cdTest ( MarkerList ) == TRUE)
     return()
 
 # Define the cell.ctde.net SPARQL endpoint
-
 # endpoint <- "http://cell.ctde.net:8080/openrdf-sesame/repositories/CL"
 # endpoint <- "http://75.127.15.173:8080/openrdf-sesame/repositories/CL" # Jonathan April 18 2017 (different way to get to Alan's)
 endpoint <- "http://cell.inference.me:7200/repositories/CL" # Jonathan Nov 17 2017
-
 # print(endpoint)
-
 
 # Check date of Ontology update
 if ( length(MarkerList) == 1 ) {
@@ -725,15 +722,33 @@ if ( length ( listPhenotypes ) == 1 ) {
     transpose.listP <- FALSE # if there is two or more rows
 }
 
-# print(listPhenotypes)
-# print(mode(listPhenotypes))
-# print(as.character(listPhenotypes))
+listPhenotypes <- cbind (
+    as.character(listPhenotypes),
+    listPhenotypeUpdate,
+    listExpPhenotypes,
+    listExpPhenotypeUpdate,
+    listPhenotypesuccess,
+    listPhenotypeID,
+    listMarkerLabels,
+    listMarkers,
+    listRanking,
+    listCellID,
+    listCellLabels
+    )
 
-# listPhenotypes <- cbind (      gsub("[+]","[+]", listPhenotypes),      listPhenotypeUpdate,    listExpPhenotypes,   listExpPhenotypeUpdate, listPhenotypesuccess, listPhenotypeID, listMarkerLabels, listMarkers, listRanking,          listCellID, listCellLabels )
-# listPhenotypes <- cbind (      listPhenotypes,      listPhenotypeUpdate,    listExpPhenotypes,   listExpPhenotypeUpdate, listPhenotypesuccess, listPhenotypeID, listMarkerLabels, listMarkers, listRanking,          listCellID, listCellLabels )
-listPhenotypes <- cbind (as.character(listPhenotypes),      listPhenotypeUpdate,    listExpPhenotypes,   listExpPhenotypeUpdate, listPhenotypesuccess, listPhenotypeID, listMarkerLabels, listMarkers, listRanking,          listCellID, listCellLabels )
-
-colnames(listPhenotypes) <- c("Short marker names","Ontology marker names","Experiment markers","Ontology exper. names","Successful Match?",  "Marker ID",     "Marker Label",   "Marker Key", "Score (Out of 1)",  "Cell ID",  "Cell Label")
+colnames(listPhenotypes) <- c(
+    "Short marker names",
+    "Ontology marker names",
+    "Experiment markers",
+    "Ontology exper. names",
+    "Successful Match?",
+    "Marker ID",
+    "Marker Label",
+    "Marker Key",
+    "Score (Out of 1)",
+    "Cell ID",
+    "Cell Label"
+    )
 
 # If there is only one marker queried the results will only have one row and this cases a small error. "transpose.listP" fixes this
 if ( transpose.listP == FALSE ) { # if there is two or more rows
