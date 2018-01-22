@@ -174,11 +174,17 @@ parentQuery <- function ( child.label = "common myeloid progenitor",
     # Concatenate the query preceded by all prefix information as a single string
     # to be passed to SPARQL.
     query <- paste ( c ( prefix.info, query.file ), collapse="\n" )
+
+    # child.label <- gsub ( "\"",  "", child.label)
+    # child.label <- gsub ( "@en", "", child.label)
+
     # Add "^" to beginning and "$" to end to find an exact match for the label.
     child.label <- paste ( "^", child.label, "$", sep = "", collapse = "" )
     query <- gsub ( "\\$label", child.label, query )
     # Execute query
-    res <- SPARQL ( url=endpoint, query )$results
+
+    res <- SPARQL ( url = endpoint, query )$results
+
     return ( res )
 }
 
