@@ -1,7 +1,5 @@
 \name{flowCL_archive}
-\alias{
-    flowCL_archive
-}
+\alias{flowCL_archive}
 \docType{data}
 \title{
     A list of data used to build a local archive.
