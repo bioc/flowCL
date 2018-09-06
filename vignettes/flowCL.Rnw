@@ -45,7 +45,7 @@ Under the Artistic License, you are free to use and redistribute this software.
 
 \section{Loading the Library}
 
-To install {\it \textbf{flowCL}} type {\it source(``http://bioconductor.org/biocLite.R'')} into R and then type \\{\it biocLite(``flowCL'')}. For more information on installation guidelines, see the Bioconductor and the CRAN websites. Once installed, to load the library, type the following into R:
+To install {\it \textbf{flowCL}} type {\it source(``http://bioconductor.org/biocLite.R'')} into R and then type \\{\it BiocManager::install(``flowCL'')}. For more information on installation guidelines, see the Bioconductor and the CRAN websites. Once installed, to load the library, type the following into R:
 <<loadlibs, echo=TRUE, fig=FALSE, results=hide>>=
 library("flowCL")
 @
