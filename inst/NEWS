@@ -52,3 +52,7 @@
 + Same as previous. Bumped by BioConductor.
 1.19.1: 
 + Changed how NEWS is displayed.
+1.21.0: 
++ Same as previous. Bumped by BioConductor.
+1.21.1: 
++ Changed endpoint in man pages, and added ImmunoOncology as a biocViews tag.

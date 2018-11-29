@@ -45,7 +45,7 @@ if ( cdTest ( MarkerList ) == TRUE)
     return()
 
 # Define the cell.ctde.net SPARQL endpoint
-# endpoint <- "http://cell.ctde.net:8080/openrdf-sesame/repositories/CL"
+# endpoint <- "http://cell.ctde.net:8080/openrdf-sesame/repositories/CL" # original
 # endpoint <- "http://75.127.15.173:8080/openrdf-sesame/repositories/CL" # Jonathan April 18 2017 (different way to get to Alan's)
 endpoint <- "http://cell.inference.me:7200/repositories/CL" # Jonathan Nov 17 2017
 # print(endpoint)
