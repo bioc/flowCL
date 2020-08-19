@@ -50,7 +50,7 @@ flowCL ( MarkerList = "HIPC", ExpMrkrLst = NULL, Indices = NULL,
 }
 
 \author{
-    Maintainer: Justin Meskas <jmeskas@bccrc.ca>
+    Maintainer: Justin Meskas <justinmeskas@gmail.com>
 
     Authors: Justin Meskas, Radina Droumeva
 }

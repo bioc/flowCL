@@ -22,7 +22,7 @@ flowCL executes queries against the Cell Ontology (CL), available at http://cell
 }
 
 \author{
-    Maintainer: Justin Meskas <jmeskas@bccrc.ca>
+    Maintainer: Justin Meskas <justinmeskas@gmail.com>
 
     Authors: Justin Meskas, Radina Droumeva
 }
