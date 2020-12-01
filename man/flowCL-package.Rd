@@ -31,30 +31,30 @@ flowCL executes queries against the Cell Ontology (CL), available at http://cell
 
 \examples{
 
-# Load a pre-loaded archive. Skipping this chuck will cause flowCL to
-## slowly build a new one.
-flowCL("archive")
-
-# Simple two marker example
-Res <- flowCL("CCR7+CD45RA+")
-tmp <- Res$'CCR7+CD45RA+'
-plot(tmp[[1]], nodeAttrs=tmp[[2]], edgeAttrs=tmp[[3]], attrs=tmp[[4]])
-Res$Table
-
-# Exact match example
-Res <- flowCL("CD3-CD19-CD20-CD14+", Verbose = TRUE, OntolNamesTD = TRUE)
-tmp <- Res$'CD3-CD19-CD20-CD14+'
-plot(tmp[[1]], nodeAttrs=tmp[[2]], edgeAttrs=tmp[[3]], attrs=tmp[[4]])
-Res$Table
-
-# Cell Label Example
-x <-"CD3-CD19-CD20-CD14+"
-Res <- flowCL(x)
-Res$Cell_Label[[x]][[1]]
-
-# As a secondary way to view the results,
-## see "[current directory]/flowCL_results/".
-# Figures created called tree_(phenotype).pdf give the cell hierarchy
-## dependent on the markers in the phenotype.
-# A list of results from Res$Table are stored in listPhenotypes.csv.
+# # Load a pre-loaded archive. Skipping this chuck will cause flowCL to
+# ## slowly build a new one.
+# flowCL("archive")
+# 
+# # Simple two marker example
+# Res <- flowCL("CCR7+CD45RA+")
+# tmp <- Res$'CCR7+CD45RA+'
+# plot(tmp[[1]], nodeAttrs=tmp[[2]], edgeAttrs=tmp[[3]], attrs=tmp[[4]])
+# Res$Table
+# 
+# # Exact match example
+# Res <- flowCL("CD3-CD19-CD20-CD14+", Verbose = TRUE, OntolNamesTD = TRUE)
+# tmp <- Res$'CD3-CD19-CD20-CD14+'
+# plot(tmp[[1]], nodeAttrs=tmp[[2]], edgeAttrs=tmp[[3]], attrs=tmp[[4]])
+# Res$Table
+# 
+# # Cell Label Example
+# x <-"CD3-CD19-CD20-CD14+"
+# Res <- flowCL(x)
+# Res$Cell_Label[[x]][[1]]
+# 
+# # As a secondary way to view the results,
+# ## see "[current directory]/flowCL_results/".
+# # Figures created called tree_(phenotype).pdf give the cell hierarchy
+# ## dependent on the markers in the phenotype.
+# # A list of results from Res$Table are stored in listPhenotypes.csv.
 }
