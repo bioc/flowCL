@@ -56,3 +56,5 @@
 + Same as previous. Bumped by BioConductor.
 1.21.1: 
 + Changed endpoint in man pages, and added ImmunoOncology as a biocViews tag.
+1.29.1: 
++ Endpoint no longer exists. Please email Justin at justinmeskas@gmail.com to request a fix.
